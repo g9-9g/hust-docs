@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 340 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 340 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 30% 10%;
+
+    --primary: 343 100% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 340 20% 96%;
+    --secondary-foreground: 343 100% 25%;
+
+    --muted: 340 15% 96%;
+    --muted-foreground: 340 10% 40%;
+
+    --accent: 343 100% 96%;
+    --accent-foreground: 343 100% 25%;
+
+    --destructive: 0 84% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 340 15% 90%;
+    --input: 340 15% 88%;
+    --ring: 343 100% 32%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 340 30% 7%;
+    --foreground: 340 10% 96%;
+    --card: 340 30% 9%;
+    --card-foreground: 340 10% 96%;
+    --popover: 340 30% 9%;
+    --popover-foreground: 340 10% 96%;
+    --primary: 343 80% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 340 15% 14%;
+    --secondary-foreground: 340 10% 96%;
+    --muted: 340 15% 14%;
+    --muted-foreground: 340 10% 65%;
+    --accent: 340 15% 14%;
+    --accent-foreground: 340 10% 96%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 15% 18%;
+    --input: 340 15% 18%;
+    --ring: 343 80% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .docx-preview-wrapper .docx-wrapper {
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .docx-preview-wrapper .docx-wrapper > section.docx {
+    margin: 0 auto 1.5rem !important;
+    box-shadow:
+      0 4px 12px hsl(var(--foreground) / 0.1),
+      0 2px 4px hsl(var(--foreground) / 0.06) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    background: #fff !important;
+    border-radius: 2px;
+  }
+  .xlsx-preview table {
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+  .xlsx-preview th,
+  .xlsx-preview td {
+    border: 1px solid hsl(var(--border));
+    padding: 4px 8px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .xlsx-preview tr:first-child td,
+  .xlsx-preview thead td {
+    background: hsl(var(--secondary));
+    font-weight: 600;
+  }
+}
+
+@layer utilities {
+  @keyframes blob-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33% { transform: translate3d(40px, -30px, 0) scale(1.08); }
+    66% { transform: translate3d(-30px, 25px, 0) scale(0.95); }
+  }
+  @keyframes blob-drift-slow {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-50px, 30px, 0) scale(1.1); }
+  }
+  @keyframes grid-pan {
+    0% { background-position: 0 0; }
+    100% { background-position: 40px 40px; }
+  }
+  .animate-blob { animation: blob-drift 16s ease-in-out infinite; will-change: transform; }
+  .animate-blob-slow { animation: blob-drift-slow 22s ease-in-out infinite; will-change: transform; }
+  .animate-grid-pan { animation: grid-pan 40s linear infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-blob, .animate-blob-slow, .animate-grid-pan { animation: none; }
+  }
+}

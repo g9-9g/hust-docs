@@ -1,0 +1,125 @@
+// Prisma schema for hust-docs (MongoDB)
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum DocumentCategory {
+  LECTURE_SLIDE
+  PAST_EXAM
+  SOLUTION
+  NOTE
+  PROJECT_SAMPLE
+  REFERENCE
+  LAB_REPORT
+  OTHER
+}
+
+enum DocumentStatus {
+  public
+  pending
+  hidden
+  deleted
+}
+
+model User {
+  id                  String     @id @default(auto()) @map("_id") @db.ObjectId
+  fullName            String
+  username            String     @unique
+  email               String     @unique
+  passwordHash        String
+  role                Role       @default(user)
+  avatarUrl           String?
+  contributionPoints  Int        @default(0)
+  isVerified          Boolean    @default(false)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  documents           Document[] @relation("UploaderDocuments")
+}
+
+model Major {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  code      String     @unique
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  subjects  Subject[]
+  documents Document[]
+}
+
+model Subject {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  code      String
+  name      String
+  majorId   String     @db.ObjectId
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  major     Major      @relation(fields: [majorId], references: [id])
+  documents Document[]
+
+  @@unique([code, majorId])
+  @@index([majorId])
+}
+
+model Document {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String           @default("")
+  subjectId      String           @db.ObjectId
+  majorId        String           @db.ObjectId
+  category       DocumentCategory
+  tags           String[]         @default([])
+  teacherName    String?
+  semester       String?
+  academicYear   String?
+
+  uploaderId     String           @db.ObjectId
+
+  originalName   String
+  storedName     String
+  path           String
+  mimeType       String
+  size           Int
+  extension      String
+
+  extraPaths     String[]         @default([])
+  extraOriginalNames String[]     @default([])
+
+  previewPath     String?
+  previewMimeType String?
+
+  viewCount      Int              @default(0)
+  downloadCount  Int              @default(0)
+  upvoteCount    Int              @default(0)
+  downvoteCount  Int              @default(0)
+
+  status         DocumentStatus   @default(public)
+  isVerified     Boolean          @default(false)
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  uploader       User             @relation("UploaderDocuments", fields: [uploaderId], references: [id])
+  subject        Subject          @relation(fields: [subjectId], references: [id])
+  major          Major            @relation(fields: [majorId], references: [id])
+
+  @@index([subjectId])
+  @@index([majorId])
+  @@index([uploaderId])
+  @@index([category])
+  @@index([status])
+}
