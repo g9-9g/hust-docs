@@ -7,7 +7,10 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   uploadDir: process.env.UPLOAD_DIR ?? 'uploads',
   maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB ?? 50),
-  clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
+  clientOrigin: (process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
   libreOfficePath: process.env.LIBREOFFICE_PATH ?? 'soffice',
   libreOfficeTimeoutMs: Number(process.env.LIBREOFFICE_TIMEOUT_MS ?? 120000),
 };
