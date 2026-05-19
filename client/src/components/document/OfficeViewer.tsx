@@ -49,7 +49,7 @@ function DocxViewer({ url, downloadUrl }: { url: string; downloadUrl: string }) 
         setState('loading');
         const [{ renderAsync }, res] = await Promise.all([
           import('docx-preview'),
-          fetch(url),
+          fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
         ]);
         if (!res.ok) throw new Error('fetch failed');
         const buffer = await res.arrayBuffer();
@@ -104,7 +104,10 @@ function XlsxViewer({ url, downloadUrl }: { url: string; downloadUrl: string }) 
     async function render() {
       try {
         setState('loading');
-        const [XLSX, res] = await Promise.all([import('xlsx'), fetch(url)]);
+        const [XLSX, res] = await Promise.all([
+          import('xlsx'),
+          fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+        ]);
         if (!res.ok) throw new Error('fetch failed');
         const buffer = await res.arrayBuffer();
         if (cancelled) return;
