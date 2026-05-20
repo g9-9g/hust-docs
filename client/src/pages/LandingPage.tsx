@@ -39,8 +39,8 @@ const FEATURES = [
   },
   {
     icon: Award,
-    title: 'Điểm đóng góp & ghi nhận',
-    desc: 'Mỗi lần upload hay nhận upvote là một lần được cộng điểm và ghi nhận trong cộng đồng HUST.',
+    title: 'Điểm thưởng & quà tặng',
+    desc: 'Tài liệu được cộng đồng upvote hay đạt mốc lượt tải sẽ tích điểm thưởng cho bạn — điểm dùng để đổi quà tặng dành cho người đóng góp tích cực.',
   },
 ];
 
@@ -67,8 +67,8 @@ const STEPS = [
   },
   {
     num: '03',
-    title: 'Chia sẻ & nhận ghi nhận',
-    desc: 'Upload tài liệu của bạn để giúp khóa sau và tích điểm đóng góp cho chính mình.',
+    title: 'Chia sẻ & nhận điểm thưởng',
+    desc: 'Upload tài liệu giúp khóa sau; khi được cộng đồng upvote và tải về, bạn tích điểm thưởng để đổi quà tặng.',
   },
 ];
 
