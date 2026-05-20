@@ -7,7 +7,22 @@ import {
   type ListDocumentsParams,
 } from '@/api/documents';
 import { getMyPoints, type MyPointsParams } from '@/api/points';
-import type { DocumentItem, ListResponse, Major, PointsSummary, Subject } from '@/types';
+import {
+  equipCosmetic,
+  getGifts,
+  getMyRedemptions,
+  redeemGift,
+  type MyRedemptionsParams,
+} from '@/api/gifts';
+import type {
+  DocumentItem,
+  GiftCatalog,
+  ListResponse,
+  Major,
+  PointsSummary,
+  RedemptionsSummary,
+  Subject,
+} from '@/types';
 
 export function useMajorsQuery() {
   return useQuery<Major[]>({
@@ -56,6 +71,44 @@ export function useMyPointsQuery(params: MyPointsParams) {
   return useQuery<PointsSummary>({
     queryKey: ['my-points', params],
     queryFn: () => getMyPoints(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGiftsQuery() {
+  return useQuery<GiftCatalog>({
+    queryKey: ['gifts'],
+    queryFn: getGifts,
+  });
+}
+
+export function useRedeemGiftMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (giftId: string) => redeemGift(giftId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gifts'] });
+      queryClient.invalidateQueries({ queryKey: ['my-points'] });
+      queryClient.invalidateQueries({ queryKey: ['my-redemptions'] });
+    },
+  });
+}
+
+export function useEquipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { giftId: string | null; slot: 'badge' | 'frame' }) =>
+      equipCosmetic(input.giftId, input.slot),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gifts'] });
+    },
+  });
+}
+
+export function useMyRedemptionsQuery(params: MyRedemptionsParams) {
+  return useQuery<RedemptionsSummary>({
+    queryKey: ['my-redemptions', params],
+    queryFn: () => getMyRedemptions(params),
     placeholderData: keepPreviousData,
   });
 }

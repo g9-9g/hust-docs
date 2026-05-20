@@ -49,6 +49,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
         reason: t.reason,
         documentId: t.documentId,
         documentTitle: t.documentId ? (titleById.get(t.documentId) ?? null) : null,
+        note: t.note,
         createdAt: t.createdAt,
       })),
       page: params.page,

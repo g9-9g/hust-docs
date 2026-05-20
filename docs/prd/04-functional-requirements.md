@@ -425,7 +425,7 @@ Thông tin cần hiển thị:
 - Tên phần quà.
 - Mô tả phần quà.
 - Số điểm cần để đổi.
-- Số lượng quà còn lại, nếu có.
+- Số lượng quà còn lại.
 - Trạng thái phần quà: còn hàng, hết hàng, tạm ẩn.
 - Nút "Đổi quà".
 - Lịch sử đổi quà của người dùng.

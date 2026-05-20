@@ -26,7 +26,21 @@ function signToken(id: string, role: string) {
   return jwt.sign({ id, role }, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as jwt.SignOptions);
 }
 
-function publicUser(u: User) {
+// Resolve cosmetic đang trang bị + các field công khai để client render Header.
+async function serializeUser(u: User) {
+  const giftIds = [u.equippedBadgeGiftId, u.equippedFrameGiftId].filter(
+    (id): id is string => !!id,
+  );
+  const gifts = giftIds.length
+    ? await prisma.gift.findMany({
+        where: { id: { in: giftIds } },
+        select: { id: true, name: true, icon: true, accentColor: true, frameGradient: true },
+      })
+    : [];
+  const giftById = new Map(gifts.map((g) => [g.id, g]));
+  const badge = u.equippedBadgeGiftId ? giftById.get(u.equippedBadgeGiftId) : undefined;
+  const frame = u.equippedFrameGiftId ? giftById.get(u.equippedFrameGiftId) : undefined;
+
   return {
     id: u.id,
     fullName: u.fullName,
@@ -36,6 +50,12 @@ function publicUser(u: User) {
     avatarUrl: u.avatarUrl,
     contributionPoints: u.contributionPoints,
     isVerified: u.isVerified,
+    equippedBadge: badge
+      ? { id: badge.id, name: badge.name, icon: badge.icon, accentColor: badge.accentColor }
+      : null,
+    equippedAvatarFrame: frame
+      ? { id: frame.id, name: frame.name, frameGradient: frame.frameGradient }
+      : null,
   };
 }
 
@@ -58,7 +78,7 @@ router.post('/register', async (req, res, next) => {
       },
     });
     const accessToken = signToken(user.id, user.role);
-    res.status(201).json({ accessToken, user: publicUser(user) });
+    res.status(201).json({ accessToken, user: await serializeUser(user) });
   } catch (err) {
     next(err);
   }
@@ -75,7 +95,7 @@ router.post('/login', async (req, res, next) => {
     const ok = await bcrypt.compare(data.password, user.passwordHash);
     if (!ok) throw new HttpError(401, 'Invalid credentials');
     const accessToken = signToken(user.id, user.role);
-    res.json({ accessToken, user: publicUser(user) });
+    res.json({ accessToken, user: await serializeUser(user) });
   } catch (err) {
     next(err);
   }
@@ -85,7 +105,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) throw new HttpError(404, 'User not found');
-    res.json({ user: publicUser(user) });
+    res.json({ user: await serializeUser(user) });
   } catch (err) {
     next(err);
   }

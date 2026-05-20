@@ -18,6 +18,7 @@ import RegisterPage from '@/pages/RegisterPage';
 import UploadPage from '@/pages/UploadPage';
 import DocumentDetailPage from '@/pages/DocumentDetailPage';
 import PointsPage from '@/pages/PointsPage';
+import RewardsPage from '@/pages/RewardsPage';
 
 function RootPage() {
   const user = useAuth((s) => s.user);
@@ -51,6 +52,7 @@ export default function App() {
           <Route index element={<RootPage />} />
           <Route path="landing" element={<LandingRoute />} />
           <Route path="documents/:id" element={<DocumentDetailPage />} />
+          <Route path="rewards" element={<RewardsPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route element={<ProtectedRoute />}>

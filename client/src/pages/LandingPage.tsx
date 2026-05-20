@@ -16,6 +16,10 @@ import {
   BookOpen,
   Zap,
   ChevronRight,
+  Gift,
+  Crown,
+  Coffee,
+  Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,8 +45,9 @@ const FEATURES = [
     icon: Award,
     title: 'Điểm thưởng & quà tặng',
     desc: 'Tài liệu được cộng đồng upvote hay đạt mốc lượt tải sẽ tích điểm thưởng cho bạn — điểm dùng để đổi quà tặng dành cho người đóng góp tích cực.',
+    to: '/rewards',
   },
-];
+] as { icon: typeof Award; title: string; desc: string; to?: string }[];
 
 const DOC_TYPES = [
   'Slide bài giảng',
@@ -196,21 +201,32 @@ export default function LandingPage() {
         </div>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((f) => (
-            <Card
-              key={f.title}
-              className="group relative overflow-hidden border-border/60 transition-all hover:-translate-y-1 hover:border-hust/30 hover:shadow-lg"
-            >
-              <div className="pointer-events-none absolute inset-x-0 -top-1 h-px bg-gradient-to-r from-transparent via-hust/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              <CardContent className="space-y-3 p-6">
-                <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-hust-50 to-hust-100 text-hust">
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <h3 className="font-semibold leading-tight">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {FEATURES.map((f) => {
+            const card = (
+              <Card className="group relative h-full overflow-hidden border-border/60 transition-all hover:-translate-y-1 hover:border-hust/30 hover:shadow-lg">
+                <div className="pointer-events-none absolute inset-x-0 -top-1 h-px bg-gradient-to-r from-transparent via-hust/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                <CardContent className="space-y-3 p-6">
+                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-hust-50 to-hust-100 text-hust">
+                    <f.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-semibold leading-tight">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  {f.to && (
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-hust">
+                      Khám phá kho quà <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                </CardContent>
+              </Card>
+            );
+            return f.to ? (
+              <Link key={f.title} to={f.to} className="block">
+                {card}
+              </Link>
+            ) : (
+              <div key={f.title}>{card}</div>
+            );
+          })}
         </div>
       </section>
 
@@ -241,6 +257,50 @@ export default function LandingPage() {
                     <ChevronRight className="h-5 w-5" />
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Đổi điểm lấy quà */}
+      <section className="border-y bg-gradient-to-br from-hust-50 via-amber-50 to-secondary/40">
+        <div className="container grid items-center gap-10 py-20 md:grid-cols-2 md:py-24">
+          <div className="space-y-4">
+            <Badge variant="secondary" className="gap-1.5">
+              <Gift className="h-3.5 w-3.5" /> Phần thưởng cho người đóng góp
+            </Badge>
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Đổi điểm lấy quà</h2>
+            <p className="text-muted-foreground">
+              Mỗi lần upload tài liệu, được upvote hay đạt mốc lượt tải, bạn tích thêm điểm. Dùng
+              điểm để đổi huy hiệu, khung avatar nổi bật và voucher, quà tặng hấp dẫn.
+            </p>
+            <Button asChild size="lg" className="h-12 gap-2 px-6 text-base shadow-lg shadow-hust/20">
+              <Link to="/rewards">
+                Khám phá kho quà <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { icon: Crown, label: 'Huy hiệu', sub: 'Huyền thoại HUST', accent: '#d97706' },
+              { icon: Sparkles, label: 'Khung avatar', sub: 'Khung Hoàng kim', accent: '#0ea5e9' },
+              { icon: Coffee, label: 'Voucher đồ uống', sub: 'Highlands, Phúc Long', accent: '#9f1239' },
+              { icon: Ticket, label: 'Quà tặng', sub: 'Thẻ nạp, sổ tay, áo', accent: '#16a34a' },
+            ].map((r) => (
+              <div
+                key={r.label}
+                className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-white/80 p-5 backdrop-blur transition-all hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white shadow"
+                  style={{ background: r.accent }}
+                >
+                  <r.icon className="h-5 w-5" />
+                </div>
+                <p className="font-semibold leading-tight">{r.label}</p>
+                <p className="text-xs text-muted-foreground">{r.sub}</p>
               </div>
             ))}
           </div>

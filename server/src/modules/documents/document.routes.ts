@@ -189,6 +189,20 @@ router.post('/', requireAuth, upload.any(), async (req, res, next) => {
       },
     });
 
+    // Thưởng người đăng tải +10 điểm cho mỗi tài liệu công khai thành công.
+    await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { contributionPoints: { increment: 10 } },
+    });
+    await prisma.pointsTransaction.create({
+      data: {
+        userId: req.user!.id,
+        amount: 10,
+        reason: 'UPLOAD_DOCUMENT',
+        documentId: doc.id,
+      },
+    });
+
     res.status(201).json({ document: doc });
   } catch (err) {
     for (const f of uploaded) {
