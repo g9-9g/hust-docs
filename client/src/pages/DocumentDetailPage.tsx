@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { Download, Eye, ThumbsUp, BadgeCheck, FileText, Calendar, User as UserIcon } from 'lucide-react';
+import { Download, Eye, BadgeCheck, FileText, Calendar, User as UserIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { useDocumentQuery } from '@/hooks/queries';
 import { PdfViewer } from '@/components/document/PdfViewer';
 import { OfficeViewer } from '@/components/document/OfficeViewer';
 import { ImageGalleryViewer } from '@/components/document/ImageGalleryViewer';
+import { VoteButtons } from '@/components/document/VoteButtons';
 import type { DocumentItem } from '@/types';
 
 type OfficeKind = 'docx' | 'xlsx' | 'pptx';
@@ -118,11 +119,18 @@ export default function DocumentDetailPage() {
                 Tải xuống · {formatFileSize(doc.size)}
               </a>
             </Button>
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="grid grid-cols-2 gap-2 text-center text-xs">
               <Stat icon={<Eye className="h-4 w-4" />} label="Lượt xem" value={doc.viewCount} />
               <Stat icon={<Download className="h-4 w-4" />} label="Tải" value={doc.downloadCount} />
-              <Stat icon={<ThumbsUp className="h-4 w-4" />} label="Upvote" value={doc.upvoteCount} />
             </div>
+            <Separator />
+            <VoteButtons
+              documentId={doc.id}
+              uploaderId={doc.uploaderId}
+              upvoteCount={doc.upvoteCount}
+              downvoteCount={doc.downvoteCount}
+              myVote={doc.myVote ?? null}
+            />
             <Separator />
             <div className="space-y-2 text-sm">
               <Row label="Định dạng" value={doc.extension.toUpperCase()} />

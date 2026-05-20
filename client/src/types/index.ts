@@ -79,10 +79,31 @@ export interface DocumentItem {
   downloadCount: number;
   upvoteCount: number;
   downvoteCount: number;
+  myVote?: 'UP' | 'DOWN' | null;
   status: 'public' | 'pending' | 'hidden' | 'deleted';
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export type PointReason = 'UPVOTE_RECEIVED' | 'DOWNLOAD_MILESTONE';
+
+export interface PointsTransaction {
+  id: string;
+  amount: number;
+  reason: PointReason;
+  documentId: string | null;
+  documentTitle: string | null;
+  createdAt: string;
+}
+
+export interface PointsSummary {
+  balance: number;
+  transactions: PointsTransaction[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
 }
 
 export interface ListResponse<T> {

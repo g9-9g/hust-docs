@@ -94,9 +94,11 @@ export function Header() {
                     <span className="text-xs font-normal text-muted-foreground">{user.email}</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2">
-                    <Award className="h-4 w-4 text-hust" />
-                    <span>{user.contributionPoints} điểm đóng góp</span>
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                    <Link to="/me/points">
+                      <Award className="h-4 w-4 text-hust" />
+                      <span>{user.contributionPoints} điểm đóng góp</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="gap-2" disabled>
                     <UserIcon className="h-4 w-4" /> Trang cá nhân
