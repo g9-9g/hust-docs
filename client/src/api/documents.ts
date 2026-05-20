@@ -29,6 +29,17 @@ export async function uploadDocument(formData: FormData): Promise<DocumentItem> 
   return data.document;
 }
 
+export interface VoteResult {
+  upvoteCount: number;
+  downvoteCount: number;
+  myVote: 'UP' | 'DOWN' | null;
+}
+
+export async function voteDocument(id: string, type: 'UP' | 'DOWN'): Promise<VoteResult> {
+  const { data } = await api.post<VoteResult>(`/documents/${id}/vote`, { type });
+  return data;
+}
+
 export function downloadUrl(id: string) {
   return `${API_BASE_URL}/documents/${id}/download`;
 }

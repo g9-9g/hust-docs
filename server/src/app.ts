@@ -4,10 +4,13 @@ import { env } from './config/env.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import documentRoutes from './modules/documents/document.routes.js';
 import subjectRoutes from './modules/subjects/subject.routes.js';
+import pointsRoutes from './modules/points/points.routes.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 
 export function createApp() {
   const app = express();
+  // Để req.ip phản ánh đúng client sau proxy (ngrok / Vercel) — dùng cho khử trùng tải.
+  app.set('trust proxy', 1);
   const allowedOrigins = env.clientOrigin;
   const vercelPreview = /^https:\/\/hust-docs-[a-z0-9-]+\.vercel\.app$/i;
   app.use(
@@ -30,6 +33,7 @@ export function createApp() {
 
   app.use('/api/auth', authRoutes);
   app.use('/api/documents', documentRoutes);
+  app.use('/api/points', pointsRoutes);
   app.use('/api', subjectRoutes);
 
   app.use(notFoundHandler);

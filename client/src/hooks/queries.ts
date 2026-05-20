@@ -1,7 +1,13 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listMajors, listSubjects } from '@/api/subjects';
-import { getDocument, listDocuments, type ListDocumentsParams } from '@/api/documents';
-import type { DocumentItem, ListResponse, Major, Subject } from '@/types';
+import {
+  getDocument,
+  listDocuments,
+  voteDocument,
+  type ListDocumentsParams,
+} from '@/api/documents';
+import { getMyPoints, type MyPointsParams } from '@/api/points';
+import type { DocumentItem, ListResponse, Major, PointsSummary, Subject } from '@/types';
 
 export function useMajorsQuery() {
   return useQuery<Major[]>({
@@ -33,5 +39,23 @@ export function useDocumentQuery(id: string | undefined) {
     queryKey: ['document', id],
     queryFn: () => getDocument(id!),
     enabled: !!id,
+  });
+}
+
+export function useVoteMutation(documentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (type: 'UP' | 'DOWN') => voteDocument(documentId, type),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['document', documentId] });
+    },
+  });
+}
+
+export function useMyPointsQuery(params: MyPointsParams) {
+  return useQuery<PointsSummary>({
+    queryKey: ['my-points', params],
+    queryFn: () => getMyPoints(params),
+    placeholderData: keepPreviousData,
   });
 }

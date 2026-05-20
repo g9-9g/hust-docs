@@ -33,6 +33,17 @@ enum DocumentStatus {
   deleted
 }
 
+enum VoteType {
+  UP
+  DOWN
+  NONE
+}
+
+enum PointReason {
+  UPVOTE_RECEIVED
+  DOWNLOAD_MILESTONE
+}
+
 model User {
   id                  String     @id @default(auto()) @map("_id") @db.ObjectId
   fullName            String
@@ -47,6 +58,8 @@ model User {
   updatedAt           DateTime   @updatedAt
 
   documents           Document[] @relation("UploaderDocuments")
+  votes               Vote[]
+  pointsTransactions  PointsTransaction[]
 }
 
 model Major {
@@ -107,6 +120,9 @@ model Document {
   upvoteCount    Int              @default(0)
   downvoteCount  Int              @default(0)
 
+  qualifiedDownloadCount   Int      @default(0)
+  downloadMilestoneAwarded Int      @default(0)
+
   status         DocumentStatus   @default(public)
   isVerified     Boolean          @default(false)
 
@@ -116,10 +132,69 @@ model Document {
   uploader       User             @relation("UploaderDocuments", fields: [uploaderId], references: [id])
   subject        Subject          @relation(fields: [subjectId], references: [id])
   major          Major            @relation(fields: [majorId], references: [id])
+  votes          Vote[]
+  downloads      DocumentDownload[]
+  views          DocumentView[]
 
   @@index([subjectId])
   @@index([majorId])
   @@index([uploaderId])
   @@index([category])
   @@index([status])
+}
+
+model Vote {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  documentId   String   @db.ObjectId
+  type         VoteType
+  pointAwarded Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id])
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@unique([userId, documentId])
+  @@index([documentId])
+}
+
+model PointsTransaction {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String      @db.ObjectId
+  amount     Int
+  reason     PointReason
+  documentId String?     @db.ObjectId
+  voterId    String?     @db.ObjectId
+  createdAt  DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model DocumentDownload {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  documentId String   @db.ObjectId
+  userId     String?  @db.ObjectId
+  dedupKey   String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@unique([documentId, dedupKey])
+  @@index([documentId])
+}
+
+model DocumentView {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  documentId String   @db.ObjectId
+  userId     String?  @db.ObjectId
+  dedupKey   String                    // "u:<userId>:<YYYY-MM-DD>" hoặc "ip:<sha256(ip)>:<YYYY-MM-DD>"
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@unique([documentId, dedupKey])      // mỗi định danh chỉ tính 1 lượt xem / tài liệu / ngày
+  @@index([documentId])
 }

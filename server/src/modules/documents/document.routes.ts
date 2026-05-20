@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { z } from 'zod';
 
@@ -188,16 +189,87 @@ router.post('/', requireAuth, upload.any(), async (req, res, next) => {
       },
     });
 
-    await prisma.user.update({
-      where: { id: req.user!.id },
-      data: { contributionPoints: { increment: 10 } },
-    });
-
     res.status(201).json({ document: doc });
   } catch (err) {
     for (const f of uploaded) {
       if (fs.existsSync(f.path)) fs.unlink(f.path, () => undefined);
     }
+    next(err);
+  }
+});
+
+const voteSchema = z.object({ type: z.enum(['UP', 'DOWN']) });
+
+router.post('/:id/vote', requireAuth, async (req, res, next) => {
+  try {
+    if (!isObjectId(req.params.id)) throw new HttpError(400, 'Invalid id');
+    const { type } = voteSchema.parse(req.body);
+
+    const doc = await prisma.document.findFirst({
+      where: { id: req.params.id, status: 'public' },
+      select: { id: true, uploaderId: true },
+    });
+    if (!doc) throw new HttpError(404, 'Document not found');
+
+    const userId = req.user!.id;
+    if (doc.uploaderId === userId) {
+      throw new HttpError(400, 'Không thể tự vote tài liệu của mình');
+    }
+
+    const existingVote = await prisma.vote.findUnique({
+      where: { userId_documentId: { userId, documentId: doc.id } },
+    });
+    const current = existingVote?.type ?? 'NONE';
+    const next = current === type ? 'NONE' : type;
+
+    const upvoteDelta = (next === 'UP' ? 1 : 0) - (current === 'UP' ? 1 : 0);
+    const downvoteDelta = (next === 'DOWN' ? 1 : 0) - (current === 'DOWN' ? 1 : 0);
+
+    // Sticky points: thưởng chủ tài liệu +2 đúng lần đầu cặp (voter, doc) đạt UP.
+    if (next === 'UP' && existingVote?.pointAwarded !== true) {
+      await prisma.user.update({
+        where: { id: doc.uploaderId },
+        data: { contributionPoints: { increment: 2 } },
+      });
+      await prisma.pointsTransaction.create({
+        data: {
+          userId: doc.uploaderId,
+          amount: 2,
+          reason: 'UPVOTE_RECEIVED',
+          documentId: doc.id,
+          voterId: userId,
+        },
+      });
+    }
+
+    const pointAwarded = existingVote?.pointAwarded === true || next === 'UP';
+    await prisma.vote.upsert({
+      where: { userId_documentId: { userId, documentId: doc.id } },
+      create: { userId, documentId: doc.id, type: next, pointAwarded },
+      update: { type: next, pointAwarded },
+    });
+
+    const counts =
+      upvoteDelta !== 0 || downvoteDelta !== 0
+        ? await prisma.document.update({
+            where: { id: doc.id },
+            data: {
+              upvoteCount: { increment: upvoteDelta },
+              downvoteCount: { increment: downvoteDelta },
+            },
+            select: { upvoteCount: true, downvoteCount: true },
+          })
+        : await prisma.document.findUniqueOrThrow({
+            where: { id: doc.id },
+            select: { upvoteCount: true, downvoteCount: true },
+          });
+
+    res.json({
+      upvoteCount: counts.upvoteCount,
+      downvoteCount: counts.downvoteCount,
+      myVote: next === 'NONE' ? null : next,
+    });
+  } catch (err) {
     next(err);
   }
 });
@@ -210,16 +282,56 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
       select: { id: true },
     });
     if (!existing) throw new HttpError(404, 'Document not found');
-    const doc = await prisma.document.update({
-      where: { id: req.params.id },
-      data: { viewCount: { increment: 1 } },
-      include: includeRefs,
-    });
-    res.json({ document: doc });
+
+    // Khử trùng lượt xem theo ngày: mỗi tài khoản/IP chỉ tính 1 lượt mỗi ngày.
+    const viewerId = req.user?.id ?? null;
+    const today = new Date().toISOString().slice(0, 10);
+    const viewerIdentity = viewerId
+      ? `u:${viewerId}`
+      : `ip:${crypto.createHash('sha256').update(req.ip ?? 'unknown').digest('hex')}`;
+    const viewDedupKey = `${viewerIdentity}:${today}`;
+
+    let isNewView = false;
+    try {
+      await prisma.documentView.create({
+        data: { documentId: existing.id, userId: viewerId, dedupKey: viewDedupKey },
+      });
+      isNewView = true;
+    } catch (err) {
+      // P2002 = định danh này đã xem tài liệu hôm nay → bỏ qua đếm.
+      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) {
+        throw err;
+      }
+    }
+
+    const doc = isNewView
+      ? await prisma.document.update({
+          where: { id: existing.id },
+          data: { viewCount: { increment: 1 } },
+          include: includeRefs,
+        })
+      : await prisma.document.findUniqueOrThrow({
+          where: { id: existing.id },
+          include: includeRefs,
+        });
+
+    let myVote: 'UP' | 'DOWN' | null = null;
+    if (req.user) {
+      const vote = await prisma.vote.findUnique({
+        where: { userId_documentId: { userId: req.user.id, documentId: doc.id } },
+        select: { type: true },
+      });
+      if (vote && vote.type !== 'NONE') myVote = vote.type;
+    }
+
+    res.json({ document: { ...doc, myVote } });
   } catch (err) {
     next(err);
   }
 });
+
+// Mốc lượt tải (theo số tài khoản đăng nhập khác nhau) → điểm thưởng chủ tài liệu.
+const DOWNLOAD_MILESTONES = [{ threshold: 50, points: 20 }];
 
 router.get('/:id/download', optionalAuth, async (req, res, next) => {
   try {
@@ -228,10 +340,66 @@ router.get('/:id/download', optionalAuth, async (req, res, next) => {
       where: { id: req.params.id, status: 'public' },
     });
     if (!existing) throw new HttpError(404, 'Document not found');
-    await prisma.document.update({
-      where: { id: existing.id },
-      data: { downloadCount: { increment: 1 } },
-    });
+
+    // Khử trùng lượt tải: định danh theo tài khoản, hoặc IP đã băm với khách vãng lai.
+    const userId = req.user?.id ?? null;
+    const dedupKey = userId
+      ? `u:${userId}`
+      : `ip:${crypto.createHash('sha256').update(req.ip ?? 'unknown').digest('hex')}`;
+
+    let isNewDownload = false;
+    try {
+      await prisma.documentDownload.create({
+        data: { documentId: existing.id, userId, dedupKey },
+      });
+      isNewDownload = true;
+    } catch (err) {
+      // P2002 = định danh này đã tải tài liệu rồi → bỏ qua đếm.
+      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) {
+        throw err;
+      }
+    }
+
+    if (isNewDownload) {
+      await prisma.document.update({
+        where: { id: existing.id },
+        data: { downloadCount: { increment: 1 } },
+      });
+
+      // Chỉ tài khoản đăng nhập khác chủ tài liệu mới tính vào mốc điểm.
+      if (userId && userId !== existing.uploaderId) {
+        const updated = await prisma.document.update({
+          where: { id: existing.id },
+          data: { qualifiedDownloadCount: { increment: 1 } },
+          select: { qualifiedDownloadCount: true, downloadMilestoneAwarded: true },
+        });
+        const milestone = [...DOWNLOAD_MILESTONES]
+          .sort((a, b) => b.threshold - a.threshold)
+          .find(
+            (m) =>
+              updated.qualifiedDownloadCount >= m.threshold &&
+              updated.downloadMilestoneAwarded < m.threshold,
+          );
+        if (milestone) {
+          await prisma.user.update({
+            where: { id: existing.uploaderId },
+            data: { contributionPoints: { increment: milestone.points } },
+          });
+          await prisma.document.update({
+            where: { id: existing.id },
+            data: { downloadMilestoneAwarded: milestone.threshold },
+          });
+          await prisma.pointsTransaction.create({
+            data: {
+              userId: existing.uploaderId,
+              amount: milestone.points,
+              reason: 'DOWNLOAD_MILESTONE',
+              documentId: existing.id,
+            },
+          });
+        }
+      }
+    }
 
     const primary = path.resolve(existing.path);
     if (!fs.existsSync(primary)) throw new HttpError(410, 'File missing');
