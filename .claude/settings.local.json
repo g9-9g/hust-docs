@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npm install *)",
-      "Bash(npx tsc *)",
-      "Bash(xargs grep -l \"vote\\\\|rating\\\\|like\\\\|points\")"
-    ]
-  }
-}
