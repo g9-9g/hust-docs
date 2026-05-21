@@ -1,7 +1,9 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Upload, BookOpen, LogOut, User as UserIcon, Award } from 'lucide-react';
+import { Search, Upload, BookOpen, LogOut, User as UserIcon, Award, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AvatarFrame } from '@/components/rewards/AvatarFrame';
+import { BadgeChip } from '@/components/rewards/BadgeChip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,6 +58,17 @@ export function Header() {
           >
             <BookOpen className="h-4 w-4" /> Tài liệu
           </NavLink>
+          <NavLink
+            to="/rewards"
+            className={({ isActive }) =>
+              cn(
+                'inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors',
+                isActive ? 'text-hust' : 'text-muted-foreground hover:text-foreground',
+              )
+            }
+          >
+            <Gift className="h-4 w-4" /> Đổi quà
+          </NavLink>
         </nav>
 
         <form onSubmit={onSearch} className="relative flex-1 min-w-0 max-w-xl">
@@ -80,12 +93,24 @@ export function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex h-10 items-center gap-2 rounded-full border bg-secondary/50 px-1 pr-3 text-sm transition-colors hover:bg-secondary">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-hust text-xs font-semibold text-white">
-                        {user.fullName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <AvatarFrame frameGradient={user.equippedAvatarFrame?.frameGradient}>
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-hust text-xs font-semibold text-white">
+                          {user.fullName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </AvatarFrame>
                     <span className="hidden md:inline">{user.username}</span>
+                    {user.equippedBadge && (
+                      <BadgeChip
+                        name={user.equippedBadge.name}
+                        icon={user.equippedBadge.icon}
+                        accentColor={user.equippedBadge.accentColor}
+                        size="sm"
+                        iconOnly
+                        className="hidden md:inline-flex"
+                      />
+                    )}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -98,6 +123,18 @@ export function Header() {
                     <Link to="/me/points">
                       <Award className="h-4 w-4 text-hust" />
                       <span>{user.contributionPoints} điểm đóng góp</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                    <Link to="/rewards">
+                      <Gift className="h-4 w-4 text-hust" />
+                      <span>Đổi quà</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                    <Link to="/me/points">
+                      <Award className="h-4 w-4 text-hust" />
+                      <span>Quà của tôi</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="gap-2" disabled>

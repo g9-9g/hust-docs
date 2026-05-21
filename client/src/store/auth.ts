@@ -9,6 +9,8 @@ interface AuthState {
   bootstrap: () => Promise<void>;
   login: (emailOrUsername: string, password: string) => Promise<void>;
   register: (input: { fullName: string; username: string; email: string; password: string }) => Promise<void>;
+  patchUser: (patch: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
   logout: () => void;
 }
 
@@ -48,6 +50,16 @@ export const useAuth = create<AuthState>((set) => ({
       set({ user: res.user });
     } finally {
       set({ loading: false });
+    }
+  },
+  patchUser: (patch) =>
+    set((s) => (s.user ? { user: { ...s.user, ...patch } } : s)),
+  refreshUser: async () => {
+    try {
+      const user = await fetchMe();
+      set({ user });
+    } catch {
+      // giữ nguyên state nếu refresh thất bại
     }
   },
   logout: () => {
