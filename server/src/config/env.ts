@@ -13,4 +13,7 @@ export const env = {
     .filter(Boolean),
   libreOfficePath: process.env.LIBREOFFICE_PATH ?? 'soffice',
   libreOfficeTimeoutMs: Number(process.env.LIBREOFFICE_TIMEOUT_MS ?? 120000),
+  azureTenantId: process.env.AZURE_TENANT_ID ?? '',
+  azureClientId: process.env.AZURE_CLIENT_ID ?? '',
+  allowedEmailDomain: process.env.ALLOWED_EMAIL_DOMAIN ?? 'sis.hust.edu.vn',
 };

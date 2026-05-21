@@ -1,25 +1,42 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SlidersHorizontal, X, Sparkles, GraduationCap, FileText, Users } from 'lucide-react';
+import {
+  SlidersHorizontal,
+  X,
+  Sparkles,
+  GraduationCap,
+  FileText,
+  Users,
+  Clock,
+  Download,
+  ThumbsUp,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { DocumentCard } from '@/components/document/DocumentCard';
+import { DocumentCarousel } from '@/components/document/DocumentCarousel';
 import { CATEGORY_OPTIONS } from '@/lib/categories';
-import { useDocumentsQuery, useMajorsQuery, useSubjectsQuery } from '@/hooks/queries';
+import { useDocumentsQuery, useMajorsQuery, useSubjectCatalogQuery } from '@/hooks/queries';
+import type { ListDocumentsParams } from '@/api/documents';
 import { cn } from '@/lib/utils';
 
+const ALL = 'all';
+const CARD_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(13rem,14rem))] gap-4';
+
 const SORT_OPTIONS = [
+  { value: 'featured', label: 'Nổi bật' },
   { value: 'latest', label: 'Mới nhất' },
-  { value: 'mostDownloaded', label: 'Tải nhiều nhất' },
   { value: 'mostUpvoted', label: 'Nhiều upvote nhất' },
+  { value: 'mostDownloaded', label: 'Lượt tải nhiều nhất' },
+  { value: 'mostViewed', label: 'Lượt xem nhiều nhất' },
 ] as const;
 
 type SortValue = (typeof SORT_OPTIONS)[number]['value'];
-
-const ALL = 'all';
+const SORT_VALUES = SORT_OPTIONS.map((s) => s.value) as readonly string[];
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,24 +44,51 @@ export default function HomePage() {
   const majorId = searchParams.get('majorId') ?? ALL;
   const subjectId = searchParams.get('subjectId') ?? ALL;
   const category = searchParams.get('category') ?? ALL;
-  const sort = (searchParams.get('sort') as SortValue) ?? 'latest';
+  const sortParam = searchParams.get('sort') ?? 'featured';
+  const sort: SortValue = (SORT_VALUES.includes(sortParam) ? sortParam : 'featured') as SortValue;
 
   const { data: majors = [] } = useMajorsQuery();
-  const { data: subjects = [] } = useSubjectsQuery(majorId !== ALL ? majorId : undefined);
+  const { data: allSubjects = [] } = useSubjectCatalogQuery();
 
-  const documentsQuery = useDocumentsQuery({
-    q: q || undefined,
+  const searching = q.trim().length > 0;
+  const showGrid = searching || sort !== 'featured';
+  const gridSort: ListDocumentsParams['sort'] = sort === 'featured' ? 'latest' : sort;
+
+  const baseFilters = {
     majorId: majorId !== ALL ? majorId : undefined,
     subjectId: subjectId !== ALL ? subjectId : undefined,
     category: category !== ALL ? category : undefined,
-    sort,
-    limit: 24,
-  });
+  };
 
-  const docs = documentsQuery.data?.items ?? [];
-  const total = documentsQuery.data?.total ?? 0;
-  const isInitialLoading = documentsQuery.isLoading;
-  const isFetching = documentsQuery.isFetching;
+  const gridQuery = useDocumentsQuery(
+    { ...baseFilters, q: q || undefined, sort: gridSort, limit: 24 },
+    showGrid,
+  );
+  const latest = useDocumentsQuery({ ...baseFilters, sort: 'latest', limit: 16 }, !showGrid);
+  const mostDownloaded = useDocumentsQuery(
+    { ...baseFilters, sort: 'mostDownloaded', limit: 16 },
+    !showGrid,
+  );
+  const mostUpvoted = useDocumentsQuery({ ...baseFilters, sort: 'mostUpvoted', limit: 16 }, !showGrid);
+
+  const total = (showGrid ? gridQuery.data?.total : latest.data?.total) ?? 0;
+  const docs = gridQuery.data?.items ?? [];
+
+  const majorOptions = useMemo(
+    () => [
+      { value: ALL, label: 'Tất cả chuyên ngành' },
+      ...majors.map((m) => ({ value: m.id, label: m.name })),
+    ],
+    [majors],
+  );
+
+  const subjectOptions = useMemo(() => {
+    const scoped = majorId !== ALL ? allSubjects.filter((s) => s.majorId === majorId) : allSubjects;
+    return [
+      { value: ALL, label: 'Tất cả môn học' },
+      ...scoped.map((s) => ({ value: s.id, label: `${s.code} — ${s.name}` })),
+    ];
+  }, [allSubjects, majorId]);
 
   function update(patch: Record<string, string | null>) {
     const next = new URLSearchParams(searchParams);
@@ -63,7 +107,7 @@ export default function HomePage() {
       if (m) items.push({ key: 'majorId', label: m.name });
     }
     if (subjectId !== ALL) {
-      const s = subjects.find((x) => x.id === subjectId);
+      const s = allSubjects.find((x) => x.id === subjectId);
       if (s) items.push({ key: 'subjectId', label: s.name });
     }
     if (category !== ALL) {
@@ -71,7 +115,11 @@ export default function HomePage() {
       if (c) items.push({ key: 'category', label: c.label });
     }
     return items;
-  }, [q, majorId, subjectId, category, majors, subjects]);
+  }, [q, majorId, subjectId, category, majors, allSubjects]);
+
+  const heading = searching
+    ? `Kết quả cho "${q}"`
+    : SORT_OPTIONS.find((s) => s.value === sort)?.label ?? 'Tài liệu';
 
   return (
     <div className="container py-6 space-y-6">
@@ -109,7 +157,7 @@ export default function HomePage() {
           <div className="grid grid-cols-3 gap-3 md:gap-4">
             {[
               { icon: FileText, label: 'Tài liệu', value: `${total}+` },
-              { icon: GraduationCap, label: 'Môn học', value: `${subjects.length || '—'}` },
+              { icon: GraduationCap, label: 'Môn học', value: `${allSubjects.length || '—'}` },
               { icon: Users, label: 'Cộng đồng', value: 'HUST' },
             ].map((s) => (
               <div
@@ -130,27 +178,21 @@ export default function HomePage() {
           <div className="flex items-center gap-2 text-sm font-medium">
             <SlidersHorizontal className="h-4 w-4" /> Lọc:
           </div>
-          <div className="grid flex-1 grid-cols-2 gap-2 md:grid-cols-4">
-            <Select value={majorId} onValueChange={(v) => update({ majorId: v, subjectId: null })}>
-              <SelectTrigger><SelectValue placeholder="Chuyên ngành" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả chuyên ngành</SelectItem>
-                {majors.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={subjectId} onValueChange={(v) => update({ subjectId: v })} disabled={majorId === ALL}>
-              <SelectTrigger><SelectValue placeholder="Môn học" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả môn học</SelectItem>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.code} — {s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
+          <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Combobox
+              value={majorId}
+              onChange={(v) => update({ majorId: v, subjectId: null })}
+              options={majorOptions}
+              placeholder="Chuyên ngành"
+              searchPlaceholder="Tìm chuyên ngành..."
+            />
+            <Combobox
+              value={subjectId}
+              onChange={(v) => update({ subjectId: v })}
+              options={subjectOptions}
+              placeholder="Môn học"
+              searchPlaceholder="Tìm môn học..."
+            />
             <Select value={category} onValueChange={(v) => update({ category: v })}>
               <SelectTrigger><SelectValue placeholder="Loại tài liệu" /></SelectTrigger>
               <SelectContent>
@@ -161,8 +203,11 @@ export default function HomePage() {
               </SelectContent>
             </Select>
 
-            <Select value={sort} onValueChange={(v) => update({ sort: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={sort}
+              onValueChange={(v) => update({ sort: v === 'featured' ? null : v })}
+            >
+              <SelectTrigger><SelectValue placeholder="Sắp xếp" /></SelectTrigger>
               <SelectContent>
                 {SORT_OPTIONS.map((s) => (
                   <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
@@ -193,45 +238,70 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">
-          {q ? `Kết quả cho "${q}"` : 'Tài liệu mới nhất'}
-          <span className="ml-2 text-sm font-normal text-muted-foreground">{total} kết quả</span>
-        </h2>
-      </div>
-
-      {isInitialLoading ? (
-        <DocumentGridSkeleton />
-      ) : docs.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-            <p className="text-lg font-medium">Chưa có tài liệu nào phù hợp</p>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Thử thay đổi bộ lọc, hoặc trở thành người đầu tiên đóng góp tài liệu cho mục này.
-            </p>
-            <Button asChild className="mt-2"><a href="/upload">Đăng tải tài liệu</a></Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div
-          className={cn(
-            'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 transition-opacity',
-            isFetching && 'opacity-70'
+      {showGrid ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            {heading}
+            <span className="ml-2 text-sm font-normal text-muted-foreground">{total} kết quả</span>
+          </h2>
+          {gridQuery.isLoading ? (
+            <DocumentGridSkeleton />
+          ) : docs.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className={cn(CARD_GRID, gridQuery.isFetching && 'opacity-70')}>
+              {docs.map((d) => (
+                <DocumentCard key={d.id} document={d} />
+              ))}
+            </div>
           )}
-        >
-          {docs.map((d) => (
-            <DocumentCard key={d.id} document={d} />
-          ))}
-        </div>
+        </section>
+      ) : !latest.isLoading && (latest.data?.total ?? 0) === 0 ? (
+        <EmptyState />
+      ) : (
+        <>
+          <DocumentCarousel
+            title="Mới nhất"
+            icon={Clock}
+            documents={latest.data?.items ?? []}
+            isLoading={latest.isLoading}
+          />
+          <DocumentCarousel
+            title="Tải nhiều nhất"
+            icon={Download}
+            documents={mostDownloaded.data?.items ?? []}
+            isLoading={mostDownloaded.isLoading}
+          />
+          <DocumentCarousel
+            title="Nhiều upvote nhất"
+            icon={ThumbsUp}
+            documents={mostUpvoted.data?.items ?? []}
+            isLoading={mostUpvoted.isLoading}
+          />
+        </>
       )}
     </div>
   );
 }
 
+function EmptyState() {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <p className="text-lg font-medium">Chưa có tài liệu nào phù hợp</p>
+        <p className="text-sm text-muted-foreground max-w-md">
+          Thử thay đổi bộ lọc, hoặc trở thành người đầu tiên đóng góp tài liệu cho mục này.
+        </p>
+        <Button asChild className="mt-2"><a href="/upload">Đăng tải tài liệu</a></Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function DocumentGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {Array.from({ length: 8 }).map((_, i) => (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,14rem))] gap-4">
+      {Array.from({ length: 10 }).map((_, i) => (
         <Card key={i} className="overflow-hidden border-border/60">
           <Skeleton className="aspect-[4/3] w-full rounded-none" />
           <CardContent className="p-4 space-y-2">

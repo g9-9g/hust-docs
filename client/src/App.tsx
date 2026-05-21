@@ -14,10 +14,12 @@ import { useAuth } from '@/store/auth';
 import HomePage from '@/pages/HomePage';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
 import UploadPage from '@/pages/UploadPage';
 import DocumentDetailPage from '@/pages/DocumentDetailPage';
+import SubjectsPage from '@/pages/SubjectsPage';
+import SubjectDetailPage from '@/pages/SubjectDetailPage';
 import PointsPage from '@/pages/PointsPage';
+import RewardsPage from '@/pages/RewardsPage';
 
 function RootPage() {
   const user = useAuth((s) => s.user);
@@ -51,8 +53,11 @@ export default function App() {
           <Route index element={<RootPage />} />
           <Route path="landing" element={<LandingRoute />} />
           <Route path="documents/:id" element={<DocumentDetailPage />} />
+          <Route path="subjects" element={<SubjectsPage />} />
+          <Route path="subjects/:id" element={<SubjectDetailPage />} />
+          <Route path="rewards" element={<RewardsPage />} />
           <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
+          <Route path="register" element={<Navigate to="/login" replace />} />
           <Route element={<ProtectedRoute />}>
             <Route path="upload" element={<UploadPage />} />
             <Route path="me/points" element={<PointsPage />} />

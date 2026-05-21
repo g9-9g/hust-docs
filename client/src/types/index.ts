@@ -1,3 +1,16 @@
+export interface EquippedBadge {
+  id: string;
+  name: string;
+  icon: string | null;
+  accentColor: string | null;
+}
+
+export interface EquippedAvatarFrame {
+  id: string;
+  name: string;
+  frameGradient: string | null;
+}
+
 export interface User {
   id: string;
   fullName: string;
@@ -7,6 +20,8 @@ export interface User {
   avatarUrl: string | null;
   contributionPoints: number;
   isVerified: boolean;
+  equippedBadge?: EquippedBadge | null;
+  equippedAvatarFrame?: EquippedAvatarFrame | null;
 }
 
 export interface Major {
@@ -20,6 +35,22 @@ export interface Subject {
   code: string;
   name: string;
   majorId: string;
+}
+
+export interface SubjectMajorRef {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface SubjectListItem {
+  id: string;
+  code: string;
+  name: string;
+  majorId: string;
+  major: SubjectMajorRef | null;
+  documentCount: number;
+  downloadCount: number;
 }
 
 export type DocumentCategory =
@@ -86,7 +117,11 @@ export interface DocumentItem {
   updatedAt: string;
 }
 
-export type PointReason = 'UPVOTE_RECEIVED' | 'DOWNLOAD_MILESTONE';
+export type PointReason =
+  | 'UPVOTE_RECEIVED'
+  | 'DOWNLOAD_MILESTONE'
+  | 'UPLOAD_DOCUMENT'
+  | 'REDEEM_REWARD';
 
 export interface PointsTransaction {
   id: string;
@@ -94,7 +129,64 @@ export interface PointsTransaction {
   reason: PointReason;
   documentId: string | null;
   documentTitle: string | null;
+  note: string | null;
   createdAt: string;
+}
+
+export type GiftType = 'BADGE' | 'AVATAR_FRAME' | 'VOUCHER' | 'OFFLINE_GIFT' | 'OTHER';
+export type GiftStatus = 'active' | 'hidden' | 'out_of_stock';
+export type RedemptionStatus = 'pending' | 'completed' | 'cancelled';
+
+export interface Gift {
+  id: string;
+  name: string;
+  description: string;
+  type: GiftType;
+  pointsCost: number;
+  stock: number | null;
+  status: GiftStatus;
+  icon: string | null;
+  accentColor: string | null;
+  frameGradient: string | null;
+  imageUrl: string | null;
+}
+
+export interface GiftCatalog {
+  gifts: Gift[];
+  balance: number | null;
+  ownedGiftIds: string[];
+  equippedBadgeGiftId: string | null;
+  equippedFrameGiftId: string | null;
+}
+
+export interface RedeemResult {
+  redemption: GiftRedemption;
+  balance: number;
+  equippedBadgeGiftId: string | null;
+  equippedFrameGiftId: string | null;
+}
+
+export interface EquipResult {
+  equippedBadgeGiftId: string | null;
+  equippedFrameGiftId: string | null;
+}
+
+export interface GiftRedemption {
+  id: string;
+  giftId: string;
+  giftName: string;
+  giftType: GiftType;
+  pointsSpent: number;
+  status: RedemptionStatus;
+  createdAt: string;
+}
+
+export interface RedemptionsSummary {
+  redemptions: GiftRedemption[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
 }
 
 export interface PointsSummary {

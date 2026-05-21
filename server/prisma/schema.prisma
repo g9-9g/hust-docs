@@ -42,6 +42,28 @@ enum VoteType {
 enum PointReason {
   UPVOTE_RECEIVED
   DOWNLOAD_MILESTONE
+  UPLOAD_DOCUMENT
+  REDEEM_REWARD
+}
+
+enum GiftType {
+  BADGE
+  AVATAR_FRAME
+  VOUCHER
+  OFFLINE_GIFT
+  OTHER
+}
+
+enum GiftStatus {
+  active
+  hidden
+  out_of_stock
+}
+
+enum RedemptionStatus {
+  pending
+  completed
+  cancelled
 }
 
 model User {
@@ -49,7 +71,10 @@ model User {
   fullName            String
   username            String     @unique
   email               String     @unique
-  passwordHash        String
+  passwordHash        String?
+  // Không dùng @unique để tránh xung đột null-duplicate trên các user cũ chưa link Microsoft.
+  // Uniqueness kiểm soát ở tầng app khi find-or-create theo (microsoftId | email).
+  microsoftId         String?
   role                Role       @default(user)
   avatarUrl           String?
   contributionPoints  Int        @default(0)
@@ -57,9 +82,15 @@ model User {
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 
+  equippedBadgeGiftId String?    @db.ObjectId
+  equippedFrameGiftId String?    @db.ObjectId
+
   documents           Document[] @relation("UploaderDocuments")
   votes               Vote[]
   pointsTransactions  PointsTransaction[]
+  giftRedemptions     GiftRedemption[]
+
+  @@index([microsoftId])
 }
 
 model Major {
@@ -166,9 +197,44 @@ model PointsTransaction {
   reason     PointReason
   documentId String?     @db.ObjectId
   voterId    String?     @db.ObjectId
+  note       String?
   createdAt  DateTime    @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Gift {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  description   String     @default("")
+  type          GiftType
+  pointsCost    Int
+  stock         Int?
+  status        GiftStatus @default(active)
+  icon          String?
+  accentColor   String?
+  frameGradient String?
+  imageUrl      String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  redemptions   GiftRedemption[]
+}
+
+model GiftRedemption {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String           @db.ObjectId
+  giftId      String           @db.ObjectId
+  giftName    String
+  giftType    GiftType
+  pointsSpent Int
+  status      RedemptionStatus
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  gift Gift @relation(fields: [giftId], references: [id])
 
   @@index([userId])
 }

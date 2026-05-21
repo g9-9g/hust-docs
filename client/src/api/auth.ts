@@ -6,18 +6,9 @@ export interface AuthResponse {
   user: User;
 }
 
-export async function register(input: {
-  fullName: string;
-  username: string;
-  email: string;
-  password: string;
-}): Promise<AuthResponse> {
-  const { data } = await api.post<AuthResponse>('/auth/register', input);
-  return data;
-}
-
-export async function login(input: { emailOrUsername: string; password: string }): Promise<AuthResponse> {
-  const { data } = await api.post<AuthResponse>('/auth/login', input);
+// Đổi ID token Microsoft lấy JWT của app + thông tin user.
+export async function loginWithMicrosoft(idToken: string): Promise<AuthResponse> {
+  const { data } = await api.post<AuthResponse>('/auth/microsoft', { idToken });
   return data;
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { uploadDocument } from '@/api/documents';
 import { CATEGORY_OPTIONS } from '@/lib/categories';
 import { formatFileSize } from '@/lib/utils';
@@ -40,11 +41,18 @@ const uploadSchema = z.object({
 
 type UploadValues = z.infer<typeof uploadSchema>;
 
+// Lấy tên file bỏ phần đuôi mở rộng để làm tiêu đề mặc định.
+function fileNameToTitle(name: string): string {
+  return name.replace(/\.[^./\\]+$/, '').trim();
+}
+
 export default function UploadPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [files, setFiles] = useState<File[]>([]);
   const file = files[0] ?? null;
+  // Khi người dùng tự sửa tiêu đề thì ngừng tự động điền theo tên file.
+  const titleEditedRef = useRef(false);
   const isImageSet = files.length > 0 && files.every((f) => f.type.startsWith('image/'));
 
   function addFiles(picked: FileList | null) {
@@ -89,11 +97,19 @@ export default function UploadPage() {
     form.setValue('subjectId', '');
   }, [majorId, form]);
 
+  // Tự động điền tiêu đề bằng tên file đầu tiên, trừ khi người dùng đã tự nhập.
+  useEffect(() => {
+    const first = files[0];
+    if (first && !titleEditedRef.current) {
+      form.setValue('title', fileNameToTitle(first.name), { shouldValidate: true });
+    }
+  }, [files, form]);
+
   const mutation = useMutation({
     mutationFn: (fd: FormData) => uploadDocument(fd),
     onSuccess: (doc) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast({ title: 'Đăng tải thành công!', description: '+10 điểm đóng góp', variant: 'success' });
+      toast({ title: 'Đăng tải thành công!', variant: 'success' });
       navigate(`/documents/${doc.id}`);
     },
     onError: (err: any) => {
@@ -230,7 +246,14 @@ export default function UploadPage() {
                       Tiêu đề <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: Đề thi cuối kỳ Giải tích 1 — Kỳ 2023.1" {...field} />
+                      <Input
+                        placeholder="VD: Đề thi cuối kỳ Giải tích 1 — Kỳ 2023.1"
+                        {...field}
+                        onChange={(e) => {
+                          titleEditedRef.current = true;
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -246,20 +269,13 @@ export default function UploadPage() {
                       <FormLabel>
                         Chuyên ngành <span className="text-destructive">*</span>
                       </FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn chuyên ngành" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {majors.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              {m.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={majors.map((m) => ({ value: m.id, label: m.name }))}
+                        placeholder="Chọn chuyên ngành"
+                        searchPlaceholder="Tìm chuyên ngành..."
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -273,20 +289,17 @@ export default function UploadPage() {
                       <FormLabel>
                         Môn học <span className="text-destructive">*</span>
                       </FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange} disabled={!majorId}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={majorId ? 'Chọn môn học' : 'Chọn chuyên ngành trước'} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {subjects.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.code} — {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={subjects.map((s) => ({
+                          value: s.id,
+                          label: `${s.code} — ${s.name}`,
+                        }))}
+                        placeholder={majorId ? 'Chọn môn học' : 'Chọn chuyên ngành trước'}
+                        searchPlaceholder="Tìm môn học..."
+                        disabled={!majorId}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
