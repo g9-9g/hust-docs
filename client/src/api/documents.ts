@@ -7,7 +7,8 @@ export interface ListDocumentsParams {
   majorId?: string;
   category?: string;
   tag?: string;
-  sort?: 'latest' | 'mostDownloaded' | 'mostUpvoted';
+  sort?: 'latest' | 'mostDownloaded' | 'mostUpvoted' | 'mostViewed' | 'topRated';
+  hideLowQuality?: boolean;
   page?: number;
   limit?: number;
 }

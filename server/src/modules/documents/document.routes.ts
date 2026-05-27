@@ -59,36 +59,93 @@ const listQuerySchema = z.object({
   majorId: z.string().optional(),
   category: z.nativeEnum(DocumentCategory).optional(),
   tag: z.string().optional(),
-  sort: z.enum(['latest', 'mostDownloaded', 'mostUpvoted']).default('latest'),
+  sort: z
+    .enum(['latest', 'mostDownloaded', 'mostUpvoted', 'mostViewed', 'topRated'])
+    .default('latest'),
+  hideLowQuality: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .transform((v) => v === true || v === 'true' || v === '1'),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
+
+const LOW_QUALITY_DOWNVOTE_THRESHOLD = 10;
 
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const params = listQuerySchema.parse(req.query);
 
     const where: Prisma.DocumentWhereInput = { status: 'public' };
+    if (params.hideLowQuality) where.downvoteCount = { lt: LOW_QUALITY_DOWNVOTE_THRESHOLD };
     if (params.subjectId && isObjectId(params.subjectId)) where.subjectId = params.subjectId;
     if (params.majorId && isObjectId(params.majorId)) where.majorId = params.majorId;
     if (params.category) where.category = params.category;
     if (params.tag) where.tags = { has: params.tag };
     if (params.q) {
       const ci = { contains: params.q, mode: 'insensitive' as const };
+      // Cho phép tìm theo tên/mã môn học và ngành: khớp trước rồi lọc tài liệu theo id.
+      const [matchedSubjects, matchedMajors] = await Promise.all([
+        prisma.subject.findMany({
+          where: { OR: [{ name: ci }, { code: ci }] },
+          select: { id: true },
+        }),
+        prisma.major.findMany({
+          where: { OR: [{ name: ci }, { code: ci }] },
+          select: { id: true },
+        }),
+      ]);
       where.OR = [
         { title: ci },
         { description: ci },
         { teacherName: ci },
         { tags: { has: params.q } },
+        ...(matchedSubjects.length
+          ? [{ subjectId: { in: matchedSubjects.map((s) => s.id) } }]
+          : []),
+        ...(matchedMajors.length
+          ? [{ majorId: { in: matchedMajors.map((m) => m.id) } }]
+          : []),
       ];
+    }
+
+    // "Highest rated" = nhiều (upvote - downvote) nhất. MongoDB không sắp xếp được theo
+    // hiệu số tính toán, nên xếp hạng một nhóm ứng viên trong bộ nhớ.
+    if (params.sort === 'topRated') {
+      const poolSize = Math.min(Math.max(params.limit * 5, 60), 200);
+      const [pool, total] = await Promise.all([
+        prisma.document.findMany({
+          where,
+          orderBy: [{ upvoteCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }],
+          take: poolSize,
+          include: includeRefs,
+        }),
+        prisma.document.count({ where }),
+      ]);
+      const ranked = pool
+        .map((d) => ({ d, score: d.upvoteCount - d.downvoteCount }))
+        .sort((a, b) => b.score - a.score || b.d.viewCount - a.d.viewCount)
+        .map((x) => x.d);
+      const skip = (params.page - 1) * params.limit;
+      const items = ranked.slice(skip, skip + params.limit);
+      res.json({
+        items,
+        page: params.page,
+        limit: params.limit,
+        total,
+        hasMore: skip + items.length < total,
+      });
+      return;
     }
 
     const orderBy: Prisma.DocumentOrderByWithRelationInput[] =
       params.sort === 'mostDownloaded'
-        ? [{ downloadCount: 'desc' }, { createdAt: 'desc' }]
+        ? [{ downloadCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }]
         : params.sort === 'mostUpvoted'
-          ? [{ upvoteCount: 'desc' }, { createdAt: 'desc' }]
-          : [{ createdAt: 'desc' }];
+          ? [{ upvoteCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }]
+          : params.sort === 'mostViewed'
+            ? [{ viewCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }]
+            : [{ createdAt: 'desc' }, { downvoteCount: 'asc' }];
 
     const skip = (params.page - 1) * params.limit;
     const [items, total] = await Promise.all([
@@ -186,20 +243,6 @@ router.post('/', requireAuth, upload.any(), async (req, res, next) => {
         extraOriginalNames: extras.map((f) => f.originalname),
         previewPath,
         previewMimeType,
-      },
-    });
-
-    // Thưởng người đăng tải +10 điểm cho mỗi tài liệu công khai thành công.
-    await prisma.user.update({
-      where: { id: req.user!.id },
-      data: { contributionPoints: { increment: 10 } },
-    });
-    await prisma.pointsTransaction.create({
-      data: {
-        userId: req.user!.id,
-        amount: 10,
-        reason: 'UPLOAD_DOCUMENT',
-        documentId: doc.id,
       },
     });
 

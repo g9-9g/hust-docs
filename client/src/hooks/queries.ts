@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { listMajors, listSubjects } from '@/api/subjects';
+import { getSubject, listMajors, listSubjects, type ListSubjectsParams } from '@/api/subjects';
 import {
   getDocument,
   listDocuments,
@@ -21,7 +21,7 @@ import type {
   Major,
   PointsSummary,
   RedemptionsSummary,
-  Subject,
+  SubjectListItem,
 } from '@/types';
 
 export function useMajorsQuery() {
@@ -33,19 +33,36 @@ export function useMajorsQuery() {
 }
 
 export function useSubjectsQuery(majorId?: string) {
-  return useQuery<Subject[]>({
+  return useQuery<SubjectListItem[]>({
     queryKey: ['subjects', majorId ?? null],
-    queryFn: () => listSubjects(majorId),
+    queryFn: () => listSubjects({ majorId }),
     enabled: !!majorId,
     staleTime: 5 * 60_000,
   });
 }
 
-export function useDocumentsQuery(params: ListDocumentsParams) {
+export function useSubjectCatalogQuery(params: ListSubjectsParams = {}) {
+  return useQuery<SubjectListItem[]>({
+    queryKey: ['subject-catalog', params],
+    queryFn: () => listSubjects(params),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useSubjectDetailQuery(id: string | undefined) {
+  return useQuery<SubjectListItem>({
+    queryKey: ['subject', id],
+    queryFn: () => getSubject(id!),
+    enabled: !!id,
+  });
+}
+
+export function useDocumentsQuery(params: ListDocumentsParams, enabled = true) {
   return useQuery<ListResponse<DocumentItem>>({
     queryKey: ['documents', params],
     queryFn: () => listDocuments(params),
     placeholderData: keepPreviousData,
+    enabled,
   });
 }
 

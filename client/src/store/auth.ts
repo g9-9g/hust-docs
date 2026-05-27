@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 import type { User } from '@/types';
-import { fetchMe, login as apiLogin, register as apiRegister } from '@/api/auth';
+import { fetchMe, loginWithMicrosoft as apiLoginWithMicrosoft } from '@/api/auth';
+import { msalInstance, loginRequest } from '@/lib/msal';
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   initialized: boolean;
   bootstrap: () => Promise<void>;
-  login: (emailOrUsername: string, password: string) => Promise<void>;
-  register: (input: { fullName: string; username: string; email: string; password: string }) => Promise<void>;
+  loginWithMicrosoft: () => Promise<void>;
   patchUser: (patch: Partial<User>) => void;
   refreshUser: () => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const useAuth = create<AuthState>((set) => ({
@@ -32,24 +32,15 @@ export const useAuth = create<AuthState>((set) => ({
       set({ user: null, initialized: true });
     }
   },
-  login: async (emailOrUsername, password) => {
+  loginWithMicrosoft: async () => {
     set({ loading: true });
+    // Full-page redirect tới Microsoft. Hàm này không bao giờ resolve ở phía SPA hiện tại
+    // vì browser sẽ navigate đi. Phần xử lý kết quả nằm ở main.tsx (handleRedirectPromise).
     try {
-      const res = await apiLogin({ emailOrUsername, password });
-      localStorage.setItem('accessToken', res.accessToken);
-      set({ user: res.user });
-    } finally {
+      await msalInstance.loginRedirect(loginRequest);
+    } catch (err) {
       set({ loading: false });
-    }
-  },
-  register: async (input) => {
-    set({ loading: true });
-    try {
-      const res = await apiRegister(input);
-      localStorage.setItem('accessToken', res.accessToken);
-      set({ user: res.user });
-    } finally {
-      set({ loading: false });
+      throw err;
     }
   },
   patchUser: (patch) =>
@@ -62,8 +53,16 @@ export const useAuth = create<AuthState>((set) => ({
       // giữ nguyên state nếu refresh thất bại
     }
   },
-  logout: () => {
+  logout: async () => {
     localStorage.removeItem('accessToken');
     set({ user: null });
+    // Chỉ xoá cache/account MSAL ở local, KHÔNG gọi logoutRedirect để tránh
+    // đăng xuất luôn khỏi tài khoản Microsoft của user.
+    try {
+      await msalInstance.clearCache();
+    } catch {
+      // best-effort
+    }
+    msalInstance.setActiveAccount(null);
   },
 }));

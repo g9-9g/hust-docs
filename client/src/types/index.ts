@@ -14,6 +14,7 @@ export interface EquippedAvatarFrame {
 export interface User {
   id: string;
   fullName: string;
+  studentId: string | null;
   username: string;
   email: string;
   role: 'user' | 'admin';
@@ -35,6 +36,22 @@ export interface Subject {
   code: string;
   name: string;
   majorId: string;
+}
+
+export interface SubjectMajorRef {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface SubjectListItem {
+  id: string;
+  code: string;
+  name: string;
+  majorId: string;
+  major: SubjectMajorRef | null;
+  documentCount: number;
+  downloadCount: number;
 }
 
 export type DocumentCategory =

@@ -69,9 +69,15 @@ enum RedemptionStatus {
 model User {
   id                  String     @id @default(auto()) @map("_id") @db.ObjectId
   fullName            String
+  // MSSV 8-9 chữ số trích từ tên hiển thị Microsoft (vd "Nguyen Le Minh 20225651" -> "20225651").
+  // Optional vì user cũ chưa parse, hoặc user không có MSSV trong tên hiển thị.
+  studentId           String?
   username            String     @unique
   email               String     @unique
-  passwordHash        String
+  passwordHash        String?
+  // Không dùng @unique để tránh xung đột null-duplicate trên các user cũ chưa link Microsoft.
+  // Uniqueness kiểm soát ở tầng app khi find-or-create theo (microsoftId | email).
+  microsoftId         String?
   role                Role       @default(user)
   avatarUrl           String?
   contributionPoints  Int        @default(0)
@@ -86,6 +92,8 @@ model User {
   votes               Vote[]
   pointsTransactions  PointsTransaction[]
   giftRedemptions     GiftRedemption[]
+
+  @@index([microsoftId])
 }
 
 model Major {

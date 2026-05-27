@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"f:\\\\Admin\\\\code\\\\Project\\\\hust-docs\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(grep -E \"\\\\.\\(js|json\\)$\")",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(Get-ChildItem -Path \"f:\\\\Admin\\\\code\\\\Project\\\\hust-docs\\\\docs\\\\prd\\\\\" -File | Select-Object Name | Format-Table -AutoSize)",
+      "Bash(git -C \"f:\\\\Admin\\\\code\\\\Project\\\\hust-docs\" log --oneline --all)",
+      "Bash(git -C \"f:\\\\Admin\\\\code\\\\Project\\\\hust-docs\" show 329d229 --stat)",
+      "Bash(git -C \"f:\\\\Admin\\\\code\\\\Project\\\\hust-docs\" show 20005e2 --stat)",
+      "Bash(git -C \"f:\\\\Admin\\\\code\\\\Project\\\\hust-docs\" log --oneline --all --grep=\"admin\\\\|gift\\\\|reward\\\\|redemption\" -i)",
+      "Bash(npx prisma *)",
+      "PowerShell(Get-Process node,tsx -ErrorAction SilentlyContinue)"
+    ]
+  }
+}

@@ -1,29 +1,30 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { prisma } from '../../config/prisma.js';
 import { env } from '../../config/env.js';
 import { HttpError } from '../../middlewares/error.middleware.js';
 import { requireAuth } from '../../middlewares/auth.middleware.js';
+import { verifyMicrosoftIdToken } from './microsoft-verify.js';
 import type { User } from '@prisma/client';
 
 const router = Router();
 
-const registerSchema = z.object({
-  fullName: z.string().min(2).max(80),
-  username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_.-]+$/),
-  email: z.string().email(),
-  password: z.string().min(6).max(100),
-});
-
-const loginSchema = z.object({
-  emailOrUsername: z.string().min(3),
-  password: z.string().min(1),
+const microsoftSchema = z.object({
+  idToken: z.string().min(20),
 });
 
 function signToken(id: string, role: string) {
   return jwt.sign({ id, role }, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as jwt.SignOptions);
+}
+
+// Tài khoản HUST Microsoft hiển thị dạng "Nguyen Le Minh 20225651".
+// Tách thành fullName ("Nguyen Le Minh") + studentId ("20225651").
+function parseHustDisplayName(raw: string): { fullName: string; studentId: string | null } {
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^(.*?)\s+(\d{8,9})\s*$/);
+  if (match) return { fullName: match[1].trim(), studentId: match[2] };
+  return { fullName: trimmed, studentId: null };
 }
 
 // Resolve cosmetic đang trang bị + các field công khai để client render Header.
@@ -44,6 +45,7 @@ async function serializeUser(u: User) {
   return {
     id: u.id,
     fullName: u.fullName,
+    studentId: u.studentId,
     username: u.username,
     email: u.email,
     role: u.role,
@@ -59,43 +61,73 @@ async function serializeUser(u: User) {
   };
 }
 
-router.post('/register', async (req, res, next) => {
-  try {
-    const data = registerSchema.parse(req.body);
-    const email = data.email.toLowerCase();
-    const username = data.username.toLowerCase();
-    const exists = await prisma.user.findFirst({
-      where: { OR: [{ email }, { username }] },
-    });
-    if (exists) throw new HttpError(409, 'Email or username already exists');
-    const passwordHash = await bcrypt.hash(data.password, 10);
-    const user = await prisma.user.create({
-      data: {
-        fullName: data.fullName,
-        username,
-        email,
-        passwordHash,
-      },
-    });
-    const accessToken = signToken(user.id, user.role);
-    res.status(201).json({ accessToken, user: await serializeUser(user) });
-  } catch (err) {
-    next(err);
+// Sinh username duy nhất từ prefix email: "nguyen.lm225522@..." -> "nguyen.lm225522" (thêm số nếu trùng).
+async function deriveUniqueUsername(email: string): Promise<string> {
+  const raw = email.split('@')[0] ?? 'user';
+  // Lọc chỉ giữ ký tự cho phép bởi regex cũ ^[a-zA-Z0-9_.-]+$ và đảm bảo length 3-32.
+  const base = raw.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 28) || 'user';
+  let candidate = base.length < 3 ? `${base}user` : base;
+  let suffix = 0;
+  // Vòng tối đa ~1000 lần (đủ thực tế).
+  while (await prisma.user.findUnique({ where: { username: candidate } })) {
+    suffix += 1;
+    candidate = `${base}${suffix}`.slice(0, 32);
+    if (suffix > 999) {
+      candidate = `${base}${Date.now()}`.slice(0, 32);
+      break;
+    }
   }
-});
+  return candidate;
+}
 
-router.post('/login', async (req, res, next) => {
+router.post('/microsoft', async (req, res, next) => {
   try {
-    const data = loginSchema.parse(req.body);
-    const ident = data.emailOrUsername.toLowerCase();
-    const user = await prisma.user.findFirst({
-      where: { OR: [{ email: ident }, { username: ident }] },
+    const { idToken } = microsoftSchema.parse(req.body);
+    const claims = await verifyMicrosoftIdToken(idToken);
+
+    const expectedSuffix = `@${env.allowedEmailDomain.toLowerCase()}`;
+    if (!claims.email.endsWith(expectedSuffix)) {
+      throw new HttpError(403, `Email không thuộc ${expectedSuffix} — chỉ tài khoản HUST mới đăng nhập được.`);
+    }
+
+    const parsed = parseHustDisplayName(claims.name);
+
+    // Ưu tiên match theo microsoftId (đã từng login), fallback theo email (tài khoản cũ migrate).
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ microsoftId: claims.oid }, { email: claims.email }] },
     });
-    if (!user) throw new HttpError(401, 'Invalid credentials');
-    const ok = await bcrypt.compare(data.password, user.passwordHash);
-    if (!ok) throw new HttpError(401, 'Invalid credentials');
+
+    if (user) {
+      // Patch các field cần backfill: liên kết Microsoft + parse tên/MSSV cho user cũ.
+      const patch: Record<string, unknown> = {};
+      if (!user.microsoftId) {
+        patch.microsoftId = claims.oid;
+        patch.isVerified = true;
+      }
+      // Nếu DB đang lưu fullName có đuôi MSSV (chưa parse), cập nhật về dạng đã làm sạch.
+      if (parsed.studentId && (user.fullName !== parsed.fullName || !user.studentId)) {
+        patch.fullName = parsed.fullName;
+        patch.studentId = parsed.studentId;
+      }
+      if (Object.keys(patch).length > 0) {
+        user = await prisma.user.update({ where: { id: user.id }, data: patch });
+      }
+    } else {
+      const username = await deriveUniqueUsername(claims.email);
+      user = await prisma.user.create({
+        data: {
+          fullName: parsed.fullName,
+          studentId: parsed.studentId,
+          username,
+          email: claims.email,
+          microsoftId: claims.oid,
+          isVerified: true,
+        },
+      });
+    }
+
     const accessToken = signToken(user.id, user.role);
-    res.json({ accessToken, user: await serializeUser(user) });
+    res.status(200).json({ accessToken, user: await serializeUser(user) });
   } catch (err) {
     next(err);
   }
