@@ -144,10 +144,31 @@
   .animate-reward-sparkle { animation: reward-sparkle 1.1s ease-in-out infinite; }
   .animate-reward-coin-bounce { animation: reward-coin-bounce 1s ease-in-out 0.2s both; }
 
+  /* Reveal nhẹ khi card vào màn hình — dùng kèm style={{ animationDelay }} để stagger.
+     Mặc định ẩn; chỉ animate khi IntersectionObserver thêm class .in-view (xem useRevealOnScroll). */
+  @keyframes reveal-up {
+    0% { opacity: 0; transform: translate3d(0, 18px, 0); }
+    100% { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes reveal-left {
+    0% { opacity: 0; transform: translate3d(-28px, 0, 0); }
+    100% { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  .animate-reveal-up, .animate-reveal-left { opacity: 0; }
+  .animate-reveal-up.in-view {
+    animation: reveal-up 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .animate-reveal-left.in-view {
+    animation: reveal-left 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-blob, .animate-blob-slow, .animate-grid-pan,
-    .animate-reward-pop-in, .animate-reward-sparkle, .animate-reward-coin-bounce {
+    .animate-reward-pop-in, .animate-reward-sparkle, .animate-reward-coin-bounce,
+    .animate-reveal-up, .animate-reveal-up.in-view,
+    .animate-reveal-left, .animate-reveal-left.in-view {
       animation: none;
+      opacity: 1;
     }
   }
 }

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useRevealOnScroll } from '@/hooks/useRevealOnScroll';
 import {
   SlidersHorizontal,
   X,
@@ -39,6 +40,7 @@ type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 const SORT_VALUES = SORT_OPTIONS.map((s) => s.value) as readonly string[];
 
 export default function HomePage() {
+  useRevealOnScroll();
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') ?? '';
   const majorId = searchParams.get('majorId') ?? ALL;
@@ -165,10 +167,11 @@ export default function HomePage() {
               { icon: FileText, label: 'Tài liệu', value: `${total}+` },
               { icon: GraduationCap, label: 'Môn học', value: `${allSubjects.length || '—'}` },
               { icon: Users, label: 'Cộng đồng', value: 'HUST' },
-            ].map((s) => (
+            ].map((s, i) => (
               <div
                 key={s.label}
-                className="rounded-xl border border-white/15 bg-white/10 p-3 text-center backdrop-blur md:p-4"
+                className="animate-reveal-up rounded-xl border border-white/15 bg-white/10 p-3 text-center backdrop-blur md:p-4"
+                style={{ animationDelay: `${150 + i * 110}ms` }}
               >
                 <s.icon className="mx-auto h-5 w-5 text-white/90" />
                 <div className="mt-1.5 text-lg font-semibold md:text-xl">{s.value}</div>

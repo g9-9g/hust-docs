@@ -2,6 +2,7 @@ import { ShieldCheck, BookOpen, Sparkles, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/store/auth';
 import { toast } from '@/components/ui/toast';
+import { useRevealOnScroll } from '@/hooks/useRevealOnScroll';
 
 // Logo Microsoft 4 ô vuông — không phụ thuộc thêm asset.
 function MicrosoftLogo({ className }: { className?: string }) {
@@ -34,6 +35,7 @@ const HIGHLIGHTS = [
 ];
 
 export default function LoginPage() {
+  useRevealOnScroll({ replay: true });
   const loginWithMicrosoft = useAuth((s) => s.loginWithMicrosoft);
   const loading = useAuth((s) => s.loading);
 
@@ -71,16 +73,25 @@ export default function LoginPage() {
       <div className="container grid min-h-[calc(100vh-8rem)] items-center gap-12 py-12 lg:grid-cols-2 lg:py-16">
         {/* Cột trái: giới thiệu */}
         <div className="space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-hust/20 bg-white/70 px-3 py-1 text-xs font-medium text-hust shadow-sm backdrop-blur">
+          <div
+            className="animate-reveal-up inline-flex items-center gap-2 rounded-full border border-hust/20 bg-white/70 px-3 py-1 text-xs font-medium text-hust shadow-sm backdrop-blur"
+            style={{ animationDelay: '0ms' }}
+          >
             <GraduationCap className="h-3.5 w-3.5" />
             HUST Docs · Cộng đồng tài liệu Bách khoa
           </div>
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h1
+              className="animate-reveal-up text-4xl font-bold tracking-tight text-foreground sm:text-5xl"
+              style={{ animationDelay: '120ms' }}
+            >
               Đăng nhập để vào{' '}
               <span className="text-hust">kho tài liệu</span> của sinh viên HUST
             </h1>
-            <p className="max-w-lg text-base text-muted-foreground sm:text-lg">
+            <p
+              className="animate-reveal-up max-w-lg text-base text-muted-foreground sm:text-lg"
+              style={{ animationDelay: '240ms' }}
+            >
               Dùng tài khoản Microsoft sinh viên (
               <span className="font-semibold text-foreground">@sis.hust.edu.vn</span>) để tải tài
               liệu, upvote bài hay, đăng đóng góp và nhận thưởng từ cộng đồng.
@@ -88,10 +99,14 @@ export default function LoginPage() {
           </div>
 
           <ul className="space-y-4">
-            {HIGHLIGHTS.map((h) => {
+            {HIGHLIGHTS.map((h, i) => {
               const Icon = h.icon;
               return (
-                <li key={h.title} className="flex gap-3">
+                <li
+                  key={h.title}
+                  className="animate-reveal-up flex gap-3"
+                  style={{ animationDelay: `${360 + i * 110}ms` }}
+                >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-hust/10 text-hust">
                     <Icon className="h-5 w-5" />
                   </div>

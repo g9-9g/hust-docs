@@ -1,4 +1,5 @@
 import { useRef, type MouseEvent } from 'react';
+import { useRevealOnScroll } from '@/hooks/useRevealOnScroll';
 import { Link } from 'react-router-dom';
 import {
   Sparkles,
@@ -79,6 +80,7 @@ const STEPS = [
 
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement | null>(null);
+  useRevealOnScroll({ replay: true });
 
   function handleHeroMouseMove(e: MouseEvent<HTMLDivElement>) {
     const el = heroRef.current;
@@ -173,8 +175,12 @@ export default function LandingPage() {
               { icon: FileText, label: 'Loại tài liệu', value: '7+' },
               { icon: GraduationCap, label: 'Chuyên ngành & môn', value: 'HUST' },
               { icon: Users, label: 'Do sinh viên đóng góp', value: '100%' },
-            ].map((s) => (
-              <Card key={s.label} className="border-border/60 bg-white/70 backdrop-blur">
+            ].map((s, i) => (
+              <Card
+                key={s.label}
+                className="animate-reveal-up border-border/60 bg-white/70 backdrop-blur"
+                style={{ animationDelay: `${200 + i * 110}ms` }}
+              >
                 <CardContent className="flex flex-col items-center gap-1.5 p-4 md:p-5">
                   <s.icon className="h-5 w-5 text-hust" />
                   <div className="text-2xl font-bold tracking-tight md:text-3xl">{s.value}</div>
@@ -201,9 +207,12 @@ export default function LandingPage() {
         </div>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((f) => {
+          {FEATURES.map((f, i) => {
             const card = (
-              <Card className="group relative h-full overflow-hidden border-border/60 transition-all hover:-translate-y-1 hover:border-hust/30 hover:shadow-lg">
+              <Card
+                className="animate-reveal-up group relative h-full overflow-hidden border-border/60 transition-all hover:-translate-y-1 hover:border-hust/30 hover:shadow-lg"
+                style={{ animationDelay: `${i * 90}ms` }}
+              >
                 <div className="pointer-events-none absolute inset-x-0 -top-1 h-px bg-gradient-to-r from-transparent via-hust/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                 <CardContent className="space-y-3 p-6">
                   <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-hust-50 to-hust-100 text-hust">
@@ -243,7 +252,10 @@ export default function LandingPage() {
           <div className="relative mt-12 grid items-stretch gap-6 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <div key={s.num} className="relative flex">
-                <div className="flex w-full flex-col rounded-2xl border border-border/60 bg-secondary/40 p-6 transition-colors hover:border-hust/30">
+                <div
+                  className="animate-reveal-left flex w-full flex-col rounded-2xl border border-border/60 bg-secondary/40 p-6 transition-colors hover:border-hust/30"
+                  style={{ animationDelay: `${i * 160}ms` }}
+                >
                   <div className="text-sm font-bold text-hust">{s.num}</div>
                   <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
                   <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
@@ -288,10 +300,11 @@ export default function LandingPage() {
               { icon: Sparkles, label: 'Khung avatar', sub: 'Khung Hoàng kim', accent: '#0ea5e9' },
               { icon: Coffee, label: 'Voucher đồ uống', sub: 'Highlands, Phúc Long', accent: '#9f1239' },
               { icon: Ticket, label: 'Quà tặng', sub: 'Thẻ nạp, sổ tay, áo', accent: '#16a34a' },
-            ].map((r) => (
+            ].map((r, i) => (
               <div
                 key={r.label}
-                className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-white/80 p-5 backdrop-blur transition-all hover:-translate-y-1 hover:shadow-lg"
+                className="animate-reveal-up flex flex-col gap-2 rounded-2xl border border-border/60 bg-white/80 p-5 backdrop-blur transition-all hover:-translate-y-1 hover:shadow-lg"
+                style={{ animationDelay: `${i * 90}ms` }}
               >
                 <div
                   className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white shadow"
@@ -326,8 +339,12 @@ export default function LandingPage() {
               title: 'Upload nhẹ nhàng',
               desc: 'Chọn file, điền môn / loại / học kỳ — xong là tài liệu của bạn nằm gọn trong kho HUST.',
             },
-          ].map((b) => (
-            <div key={b.title} className="flex gap-3 rounded-xl border border-border/60 bg-white/60 p-5">
+          ].map((b, i) => (
+            <div
+              key={b.title}
+              className="animate-reveal-up flex gap-3 rounded-xl border border-border/60 bg-white/60 p-5"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-hust-50 text-hust">
                 <b.icon className="h-5 w-5" />
               </div>
@@ -342,7 +359,7 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="container pb-24">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-hust-700 via-hust to-hust-800 p-10 text-white shadow-2xl md:p-16">
+        <div className="animate-reveal-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-hust-700 via-hust to-hust-800 p-10 text-white shadow-2xl md:p-16">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.12] animate-grid-pan"
             style={{

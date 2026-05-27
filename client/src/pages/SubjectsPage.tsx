@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Combobox } from '@/components/ui/combobox';
 import { useMajorsQuery, useSubjectCatalogQuery } from '@/hooks/queries';
+import { useRevealOnScroll } from '@/hooks/useRevealOnScroll';
 import type { SubjectListItem } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,7 @@ function firstLetter(name: string): string {
 }
 
 export default function SubjectsPage() {
+  useRevealOnScroll();
   const [majorId, setMajorId] = useState(ALL);
   const [letter, setLetter] = useState(POPULAR);
   const [search, setSearch] = useState('');
@@ -101,10 +103,10 @@ export default function SubjectsPage() {
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <HeroStat icon={GraduationCap} value={majors.length || '—'} label="Ngành" />
-            <HeroStat icon={Library} value={subjects.length || '—'} label="Môn học" />
-            <HeroStat icon={FileText} value={totals.docs || '—'} label="Tài liệu" />
-            <HeroStat icon={Download} value={totals.downloads || '—'} label="Lượt tải" />
+            <HeroStat icon={GraduationCap} value={majors.length || '—'} label="Ngành" delay={150} />
+            <HeroStat icon={Library} value={subjects.length || '—'} label="Môn học" delay={260} />
+            <HeroStat icon={FileText} value={totals.docs || '—'} label="Tài liệu" delay={370} />
+            <HeroStat icon={Download} value={totals.downloads || '—'} label="Lượt tải" delay={480} />
           </div>
         </div>
       </section>
@@ -194,13 +196,18 @@ function HeroStat({
   icon: Icon,
   value,
   label,
+  delay = 0,
 }: {
   icon: typeof FileText;
   value: string | number;
   label: string;
+  delay?: number;
 }) {
   return (
-    <div className="rounded-xl border border-white/15 bg-white/10 p-3 text-center backdrop-blur md:p-4">
+    <div
+      className="animate-reveal-up rounded-xl border border-white/15 bg-white/10 p-3 text-center backdrop-blur md:p-4"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <Icon className="mx-auto h-5 w-5 text-white/90" />
       <div className="mt-1.5 text-lg font-semibold md:text-xl">{value}</div>
       <div className="text-[11px] uppercase tracking-wider text-white/70">{label}</div>

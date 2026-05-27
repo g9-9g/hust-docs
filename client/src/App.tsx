@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -24,15 +24,20 @@ import RewardsPage from '@/pages/RewardsPage';
 
 function RootPage() {
   const user = useAuth((s) => s.user);
+  const initialized = useAuth((s) => s.initialized);
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const hasQuery = Array.from(searchParams.keys()).length > 0;
   const fromApp = (location.state as { fromApp?: boolean } | null)?.fromApp === true;
+  // Khi đã hiển thị HomePage thì giữ nguyên, kể cả khi user xóa hết filter (URL về `/`).
+  const stickyHome = useRef(false);
 
-  if (!user && !hasQuery && !fromApp) {
-    return <Navigate to="/landing" replace />;
+  if (!initialized) return null;
+  if (stickyHome.current || user || hasQuery || fromApp) {
+    stickyHome.current = true;
+    return <HomePage />;
   }
-  return <HomePage />;
+  return <Navigate to="/landing" replace />;
 }
 
 function LandingRoute() {

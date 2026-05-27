@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/toast';
 import { AvatarFrame } from '@/components/rewards/AvatarFrame';
 import { GiftImage } from '@/components/rewards/GiftImage';
 import { RewardCelebration } from '@/components/rewards/RewardCelebration';
+import { RewardLadder } from '@/components/rewards/RewardLadder';
 import { resolveGiftIcon } from '@/components/rewards/giftIcons';
 import { useGiftsQuery, useRedeemGiftMutation, useEquipMutation } from '@/hooks/queries';
 import { useAuth } from '@/store/auth';
@@ -239,7 +240,14 @@ export default function RewardsPage() {
         <div className="pointer-events-none absolute -bottom-24 -left-12 h-72 w-72 rounded-full bg-pink-300/20 blur-3xl animate-blob-slow" />
 
         <div className="container relative py-14 md:py-20">
-          <div className="mx-auto max-w-2xl text-center">
+          <div
+            className={`mx-auto items-center gap-10 ${
+              user
+                ? 'grid max-w-5xl lg:grid-cols-[minmax(0,1fr)_320px]'
+                : 'max-w-2xl'
+            }`}
+          >
+          <div className="text-center">
             <Badge
               variant="outline"
               className="gap-1.5 border-white/30 bg-white/10 text-white backdrop-blur"
@@ -282,6 +290,13 @@ export default function RewardsPage() {
                 >
                   <History className="h-4 w-4" /> Xem lịch sử đổi quà
                 </Link>
+              </div>
+            )}
+          </div>
+
+            {user && (
+              <div className="mx-auto w-full max-w-sm lg:mx-0">
+                <RewardLadder balance={balance ?? user.contributionPoints ?? 0} />
               </div>
             )}
           </div>
