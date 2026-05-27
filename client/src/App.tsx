@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Toaster } from '@/components/ui/toast';
+import { ConfirmDialog } from '@/components/ui/confirm';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { useAuth } from '@/store/auth';
 import HomePage from '@/pages/HomePage';
@@ -74,6 +75,7 @@ export default function App() {
         </Route>
       </Routes>
       <Toaster />
+      <ConfirmDialog />
     </BrowserRouter>
   );
 }

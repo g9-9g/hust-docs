@@ -3,6 +3,7 @@ import cors from 'cors';
 import { env } from './config/env.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import documentRoutes from './modules/documents/document.routes.js';
+import commentRoutes from './modules/comments/comment.routes.js';
 import subjectRoutes from './modules/subjects/subject.routes.js';
 import pointsRoutes from './modules/points/points.routes.js';
 import giftRoutes from './modules/gifts/gift.routes.js';
@@ -34,6 +35,7 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/documents/:documentId/comments', commentRoutes);
   app.use('/api/documents', documentRoutes);
   app.use('/api/points', pointsRoutes);
   app.use('/api/gifts', giftRoutes);

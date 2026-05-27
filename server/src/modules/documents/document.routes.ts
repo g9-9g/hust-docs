@@ -348,16 +348,23 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
       : `ip:${crypto.createHash('sha256').update(req.ip ?? 'unknown').digest('hex')}`;
     const viewDedupKey = `${viewerIdentity}:${today}`;
 
+    // Pre-check trước khi create để tránh Prisma log P2002 khi định danh đã xem hôm nay.
+    const existedView = await prisma.documentView.findUnique({
+      where: { documentId_dedupKey: { documentId: existing.id, dedupKey: viewDedupKey } },
+      select: { id: true },
+    });
     let isNewView = false;
-    try {
-      await prisma.documentView.create({
-        data: { documentId: existing.id, userId: viewerId, dedupKey: viewDedupKey },
-      });
-      isNewView = true;
-    } catch (err) {
-      // P2002 = định danh này đã xem tài liệu hôm nay → bỏ qua đếm.
-      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) {
-        throw err;
+    if (!existedView) {
+      try {
+        await prisma.documentView.create({
+          data: { documentId: existing.id, userId: viewerId, dedupKey: viewDedupKey },
+        });
+        isNewView = true;
+      } catch (err) {
+        // Race condition: 2 request cùng định danh chạy song song → bỏ qua đếm.
+        if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) {
+          throw err;
+        }
       }
     }
 
@@ -404,16 +411,21 @@ router.get('/:id/download', optionalAuth, async (req, res, next) => {
       ? `u:${userId}`
       : `ip:${crypto.createHash('sha256').update(req.ip ?? 'unknown').digest('hex')}`;
 
+    const existedDownload = await prisma.documentDownload.findUnique({
+      where: { documentId_dedupKey: { documentId: existing.id, dedupKey } },
+      select: { id: true },
+    });
     let isNewDownload = false;
-    try {
-      await prisma.documentDownload.create({
-        data: { documentId: existing.id, userId, dedupKey },
-      });
-      isNewDownload = true;
-    } catch (err) {
-      // P2002 = định danh này đã tải tài liệu rồi → bỏ qua đếm.
-      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) {
-        throw err;
+    if (!existedDownload) {
+      try {
+        await prisma.documentDownload.create({
+          data: { documentId: existing.id, userId, dedupKey },
+        });
+        isNewDownload = true;
+      } catch (err) {
+        if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) {
+          throw err;
+        }
       }
     }
 

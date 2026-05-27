@@ -90,6 +90,7 @@ model User {
 
   documents           Document[] @relation("UploaderDocuments")
   votes               Vote[]
+  comments            Comment[]
   pointsTransactions  PointsTransaction[]
   giftRedemptions     GiftRedemption[]
 
@@ -167,6 +168,7 @@ model Document {
   subject        Subject          @relation(fields: [subjectId], references: [id])
   major          Major            @relation(fields: [majorId], references: [id])
   votes          Vote[]
+  comments       Comment[]
   downloads      DocumentDownload[]
   views          DocumentView[]
 
@@ -239,6 +241,26 @@ model GiftRedemption {
   user User @relation(fields: [userId], references: [id])
   gift Gift @relation(fields: [giftId], references: [id])
 
+  @@index([userId])
+}
+
+model Comment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  documentId String   @db.ObjectId
+  userId     String   @db.ObjectId
+  parentId   String?  @db.ObjectId
+  content    String
+  deletedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document Document  @relation(fields: [documentId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([documentId, createdAt])
+  @@index([parentId])
   @@index([userId])
 }
 

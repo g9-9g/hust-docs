@@ -8,6 +8,13 @@ import {
 } from '@/api/documents';
 import { getMyPoints, type MyPointsParams } from '@/api/points';
 import {
+  createComment,
+  deleteComment,
+  listComments,
+  type CommentItem,
+  type CommentSort,
+} from '@/api/comments';
+import {
   equipCosmetic,
   getGifts,
   getMyRedemptions,
@@ -80,6 +87,40 @@ export function useVoteMutation(documentId: string) {
     mutationFn: (type: 'UP' | 'DOWN') => voteDocument(documentId, type),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['document', documentId] });
+    },
+  });
+}
+
+export function useCommentsQuery(
+  documentId: string | undefined,
+  sort: CommentSort,
+  limit: number,
+) {
+  return useQuery<ListResponse<CommentItem>>({
+    queryKey: ['comments', documentId, sort, limit],
+    queryFn: () => listComments({ documentId: documentId!, sort, limit }),
+    enabled: !!documentId,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useCreateCommentMutation(documentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { content: string; parentId?: string }) =>
+      createComment(documentId, input.content, input.parentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', documentId] });
+    },
+  });
+}
+
+export function useDeleteCommentMutation(documentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) => deleteComment(documentId, commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', documentId] });
     },
   });
 }

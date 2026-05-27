@@ -14,6 +14,7 @@ import { PdfViewer } from '@/components/document/PdfViewer';
 import { OfficeViewer } from '@/components/document/OfficeViewer';
 import { ImageGalleryViewer } from '@/components/document/ImageGalleryViewer';
 import { VoteButtons } from '@/components/document/VoteButtons';
+import { CommentsSection } from '@/components/document/CommentsSection';
 import type { DocumentItem } from '@/types';
 
 type OfficeKind = 'docx' | 'xlsx' | 'pptx';
@@ -108,6 +109,8 @@ export default function DocumentDetailPage() {
             </CardContent>
           </Card>
         )}
+
+        <CommentsSection documentId={doc.id} />
       </div>
 
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
