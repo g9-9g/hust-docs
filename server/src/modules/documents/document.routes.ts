@@ -62,15 +62,22 @@ const listQuerySchema = z.object({
   sort: z
     .enum(['latest', 'mostDownloaded', 'mostUpvoted', 'mostViewed', 'topRated'])
     .default('latest'),
+  hideLowQuality: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .transform((v) => v === true || v === 'true' || v === '1'),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
+
+const LOW_QUALITY_DOWNVOTE_THRESHOLD = 10;
 
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const params = listQuerySchema.parse(req.query);
 
     const where: Prisma.DocumentWhereInput = { status: 'public' };
+    if (params.hideLowQuality) where.downvoteCount = { lt: LOW_QUALITY_DOWNVOTE_THRESHOLD };
     if (params.subjectId && isObjectId(params.subjectId)) where.subjectId = params.subjectId;
     if (params.majorId && isObjectId(params.majorId)) where.majorId = params.majorId;
     if (params.category) where.category = params.category;
@@ -109,7 +116,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
       const [pool, total] = await Promise.all([
         prisma.document.findMany({
           where,
-          orderBy: [{ upvoteCount: 'desc' }, { createdAt: 'desc' }],
+          orderBy: [{ upvoteCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }],
           take: poolSize,
           include: includeRefs,
         }),
@@ -133,12 +140,12 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
     const orderBy: Prisma.DocumentOrderByWithRelationInput[] =
       params.sort === 'mostDownloaded'
-        ? [{ downloadCount: 'desc' }, { createdAt: 'desc' }]
+        ? [{ downloadCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }]
         : params.sort === 'mostUpvoted'
-          ? [{ upvoteCount: 'desc' }, { createdAt: 'desc' }]
+          ? [{ upvoteCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }]
           : params.sort === 'mostViewed'
-            ? [{ viewCount: 'desc' }, { createdAt: 'desc' }]
-            : [{ createdAt: 'desc' }];
+            ? [{ viewCount: 'desc' }, { downvoteCount: 'asc' }, { createdAt: 'desc' }]
+            : [{ createdAt: 'desc' }, { downvoteCount: 'asc' }];
 
     const skip = (params.page - 1) * params.limit;
     const [items, total] = await Promise.all([

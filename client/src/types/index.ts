@@ -14,6 +14,7 @@ export interface EquippedAvatarFrame {
 export interface User {
   id: string;
   fullName: string;
+  studentId: string | null;
   username: string;
   email: string;
   role: 'user' | 'admin';

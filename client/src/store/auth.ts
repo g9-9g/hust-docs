@@ -34,17 +34,13 @@ export const useAuth = create<AuthState>((set) => ({
   },
   loginWithMicrosoft: async () => {
     set({ loading: true });
+    // Full-page redirect tới Microsoft. Hàm này không bao giờ resolve ở phía SPA hiện tại
+    // vì browser sẽ navigate đi. Phần xử lý kết quả nằm ở main.tsx (handleRedirectPromise).
     try {
-      // Mở popup login Microsoft -> trả về ID token đã được Microsoft ký.
-      const result = await msalInstance.loginPopup(loginRequest);
-      if (!result.idToken) {
-        throw new Error('Microsoft không trả về ID token.');
-      }
-      const res = await apiLoginWithMicrosoft(result.idToken);
-      localStorage.setItem('accessToken', res.accessToken);
-      set({ user: res.user });
-    } finally {
+      await msalInstance.loginRedirect(loginRequest);
+    } catch (err) {
       set({ loading: false });
+      throw err;
     }
   },
   patchUser: (patch) =>
@@ -60,17 +56,13 @@ export const useAuth = create<AuthState>((set) => ({
   logout: async () => {
     localStorage.removeItem('accessToken');
     set({ user: null });
-    // Best-effort: đăng xuất khỏi MSAL cache. Bỏ qua nếu user chưa từng đăng nhập MS phiên này.
+    // Chỉ xoá cache/account MSAL ở local, KHÔNG gọi logoutRedirect để tránh
+    // đăng xuất luôn khỏi tài khoản Microsoft của user.
     try {
-      const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
-      if (account) {
-        await msalInstance.logoutPopup({
-          account,
-          postLogoutRedirectUri: window.location.origin,
-        });
-      }
+      await msalInstance.clearCache();
     } catch {
-      // ignore — popup bị block hoặc user huỷ; token app đã xoá nên trạng thái đã sạch.
+      // best-effort
     }
+    msalInstance.setActiveAccount(null);
   },
 }));

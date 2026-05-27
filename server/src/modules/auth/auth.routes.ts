@@ -18,6 +18,15 @@ function signToken(id: string, role: string) {
   return jwt.sign({ id, role }, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as jwt.SignOptions);
 }
 
+// Tài khoản HUST Microsoft hiển thị dạng "Nguyen Le Minh 20225651".
+// Tách thành fullName ("Nguyen Le Minh") + studentId ("20225651").
+function parseHustDisplayName(raw: string): { fullName: string; studentId: string | null } {
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^(.*?)\s+(\d{8,9})\s*$/);
+  if (match) return { fullName: match[1].trim(), studentId: match[2] };
+  return { fullName: trimmed, studentId: null };
+}
+
 // Resolve cosmetic đang trang bị + các field công khai để client render Header.
 async function serializeUser(u: User) {
   const giftIds = [u.equippedBadgeGiftId, u.equippedFrameGiftId].filter(
@@ -36,6 +45,7 @@ async function serializeUser(u: User) {
   return {
     id: u.id,
     fullName: u.fullName,
+    studentId: u.studentId,
     username: u.username,
     email: u.email,
     role: u.role,
@@ -80,24 +90,34 @@ router.post('/microsoft', async (req, res, next) => {
       throw new HttpError(403, `Email không thuộc ${expectedSuffix} — chỉ tài khoản HUST mới đăng nhập được.`);
     }
 
+    const parsed = parseHustDisplayName(claims.name);
+
     // Ưu tiên match theo microsoftId (đã từng login), fallback theo email (tài khoản cũ migrate).
     let user = await prisma.user.findFirst({
       where: { OR: [{ microsoftId: claims.oid }, { email: claims.email }] },
     });
 
     if (user) {
-      // Lần đầu liên kết Microsoft vào user cũ -> gắn microsoftId, đánh dấu verified.
+      // Patch các field cần backfill: liên kết Microsoft + parse tên/MSSV cho user cũ.
+      const patch: Record<string, unknown> = {};
       if (!user.microsoftId) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { microsoftId: claims.oid, isVerified: true },
-        });
+        patch.microsoftId = claims.oid;
+        patch.isVerified = true;
+      }
+      // Nếu DB đang lưu fullName có đuôi MSSV (chưa parse), cập nhật về dạng đã làm sạch.
+      if (parsed.studentId && (user.fullName !== parsed.fullName || !user.studentId)) {
+        patch.fullName = parsed.fullName;
+        patch.studentId = parsed.studentId;
+      }
+      if (Object.keys(patch).length > 0) {
+        user = await prisma.user.update({ where: { id: user.id }, data: patch });
       }
     } else {
       const username = await deriveUniqueUsername(claims.email);
       user = await prisma.user.create({
         data: {
-          fullName: claims.name,
+          fullName: parsed.fullName,
+          studentId: parsed.studentId,
           username,
           email: claims.email,
           microsoftId: claims.oid,

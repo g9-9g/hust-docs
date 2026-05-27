@@ -40,6 +40,15 @@ function LandingRoute() {
   return <LandingPage />;
 }
 
+function LoginRoute() {
+  const user = useAuth((s) => s.user);
+  const initialized = useAuth((s) => s.initialized);
+  // Chờ bootstrap xong trước khi quyết định redirect, tránh nháy LoginPage rồi mới redirect.
+  if (!initialized) return null;
+  if (user) return <Navigate to="/" replace />;
+  return <LoginPage />;
+}
+
 export default function App() {
   const bootstrap = useAuth((s) => s.bootstrap);
   useEffect(() => {
@@ -56,7 +65,7 @@ export default function App() {
           <Route path="subjects" element={<SubjectsPage />} />
           <Route path="subjects/:id" element={<SubjectDetailPage />} />
           <Route path="rewards" element={<RewardsPage />} />
-          <Route path="login" element={<LoginPage />} />
+          <Route path="login" element={<LoginRoute />} />
           <Route path="register" element={<Navigate to="/login" replace />} />
           <Route element={<ProtectedRoute />}>
             <Route path="upload" element={<UploadPage />} />

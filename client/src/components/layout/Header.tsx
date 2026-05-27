@@ -31,7 +31,7 @@ import { useDocumentsQuery, useSubjectCatalogQuery } from '@/hooks/queries';
 import { CATEGORY_LABEL, CATEGORY_OPTIONS } from '@/lib/categories';
 import { fileTypeStyle } from '@/lib/fileType';
 import type { DocumentItem } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, cleanFullName, shortDisplayName } from '@/lib/utils';
 
 const SUGGEST_LIMIT = 7;
 
@@ -413,11 +413,13 @@ export function Header() {
                     <AvatarFrame frameGradient={user.equippedAvatarFrame?.frameGradient}>
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-hust text-xs font-semibold text-white">
-                          {user.fullName.charAt(0).toUpperCase()}
+                          {(cleanFullName(user.fullName) || user.username).charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </AvatarFrame>
-                    <span className="hidden md:inline">{user.username}</span>
+                    <span className="hidden md:inline">
+                      {shortDisplayName(user.fullName) || user.username}
+                    </span>
                     {user.equippedBadge && (
                       <BadgeChip
                         name={user.equippedBadge.name}
@@ -432,7 +434,7 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="flex flex-col">
-                    <span>{user.fullName}</span>
+                    <span>{cleanFullName(user.fullName) || user.username}</span>
                     <span className="text-xs font-normal text-muted-foreground">{user.email}</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

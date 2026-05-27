@@ -64,12 +64,18 @@ export default function HomePage() {
     { ...baseFilters, q: q || undefined, sort: gridSort, limit: 24 },
     showGrid,
   );
-  const latest = useDocumentsQuery({ ...baseFilters, sort: 'latest', limit: 16 }, !showGrid);
-  const mostDownloaded = useDocumentsQuery(
-    { ...baseFilters, sort: 'mostDownloaded', limit: 16 },
+  const latest = useDocumentsQuery(
+    { ...baseFilters, sort: 'latest', limit: 16, hideLowQuality: true },
     !showGrid,
   );
-  const mostUpvoted = useDocumentsQuery({ ...baseFilters, sort: 'mostUpvoted', limit: 16 }, !showGrid);
+  const mostDownloaded = useDocumentsQuery(
+    { ...baseFilters, sort: 'mostDownloaded', limit: 16, hideLowQuality: true },
+    !showGrid,
+  );
+  const mostUpvoted = useDocumentsQuery(
+    { ...baseFilters, sort: 'mostUpvoted', limit: 16, hideLowQuality: true },
+    !showGrid,
+  );
 
   const total = (showGrid ? gridQuery.data?.total : latest.data?.total) ?? 0;
   const docs = gridQuery.data?.items ?? [];
