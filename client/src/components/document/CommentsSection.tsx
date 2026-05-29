@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  BadgeCheck,
   MessageSquare,
   Send,
   Trash2,
@@ -342,7 +341,6 @@ function CommentRow({ c, canReply, onReply, onDelete, deleting, viewerId, compac
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
           <span className="inline-flex items-center gap-1 font-medium">
             {cleanFullName(c.user.fullName) || c.user.username}
-            {c.user.isVerified && <BadgeCheck className="h-4 w-4 text-emerald-600" />}
           </span>
           <span className="text-xs text-muted-foreground">@{c.user.username}</span>
           <span className="text-xs text-muted-foreground">·</span>

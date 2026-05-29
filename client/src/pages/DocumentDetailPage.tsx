@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { Download, Eye, BadgeCheck, FileText, Calendar, User as UserIcon } from 'lucide-react';
+import { Download, Eye, FileText, Calendar, User as UserIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -170,7 +170,6 @@ export default function DocumentDetailPage() {
                 <div className="flex flex-col">
                   <span className="flex items-center gap-1 font-medium">
                     {up.fullName}
-                    {up.isVerified && <BadgeCheck className="h-4 w-4 text-emerald-600" />}
                   </span>
                   <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
                     <UserIcon className="h-3 w-3" /> @{up.username}

@@ -30,3 +30,8 @@ export async function getMyRedemptions(
   const { data } = await api.get<RedemptionsSummary>('/redemptions/me', { params });
   return data;
 }
+
+export async function markRedemptionUsed(id: string) {
+  const { data } = await api.post(`/redemptions/${id}/use`);
+  return data;
+}

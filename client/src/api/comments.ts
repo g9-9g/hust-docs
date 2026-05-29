@@ -6,7 +6,6 @@ export interface CommentAuthor {
   username: string;
   fullName: string;
   avatarUrl: string | null;
-  isVerified: boolean;
 }
 
 export interface CommentReply {

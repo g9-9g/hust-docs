@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Award, Gift as GiftIcon, History, LogIn, Check, Sparkles } from 'lucide-react';
+import { Award, Check, Gift as GiftIcon, History, LogIn, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +20,7 @@ import { GiftImage } from '@/components/rewards/GiftImage';
 import { RewardCelebration } from '@/components/rewards/RewardCelebration';
 import { RewardLadder } from '@/components/rewards/RewardLadder';
 import { resolveGiftIcon } from '@/components/rewards/giftIcons';
-import { useGiftsQuery, useRedeemGiftMutation, useEquipMutation } from '@/hooks/queries';
+import { useGiftsQuery, useRedeemGiftMutation } from '@/hooks/queries';
 import { useAuth } from '@/store/auth';
 import type { Gift, GiftType } from '@/types';
 
@@ -85,9 +85,10 @@ interface GiftCardProps {
   equipped: boolean;
   isAuthed: boolean;
   onRedeem: (gift: Gift) => void;
+  onNotEnough: (gift: Gift) => void;
 }
 
-function GiftCard({ gift, balance, owned, equipped, isAuthed, onRedeem }: GiftCardProps) {
+function GiftCard({ gift, balance, owned, equipped, isAuthed, onRedeem, onNotEnough }: GiftCardProps) {
   const navigate = useNavigate();
   const soldOut = gift.stock !== null && gift.stock <= 0;
   const notEnough = balance !== null && balance < gift.pointsCost;
@@ -100,9 +101,9 @@ function GiftCard({ gift, balance, owned, equipped, isAuthed, onRedeem }: GiftCa
   } else if (soldOut) {
     action = { label: 'Hết hàng', disabled: true };
   } else if (notEnough) {
-    action = { label: 'Không đủ điểm', disabled: true };
+    action = { label: 'Đổi điểm', disabled: false, onClick: () => onNotEnough(gift) };
   } else {
-    action = { label: 'Đổi quà', disabled: false, onClick: () => onRedeem(gift) };
+    action = { label: 'Đổi điểm', disabled: false, onClick: () => onRedeem(gift) };
   }
 
   return (
@@ -157,10 +158,10 @@ export default function RewardsPage() {
   const refreshUser = useAuth((s) => s.refreshUser);
   const { data, isLoading } = useGiftsQuery();
   const redeemMutation = useRedeemGiftMutation();
-  const equipMutation = useEquipMutation();
 
   const [tab, setTab] = useState('all');
   const [confirmGift, setConfirmGift] = useState<Gift | null>(null);
+  const [notEnoughGift, setNotEnoughGift] = useState<Gift | null>(null);
   const [celebrationGift, setCelebrationGift] = useState<Gift | null>(null);
 
   const gifts = data?.gifts ?? [];
@@ -170,7 +171,6 @@ export default function RewardsPage() {
   const equippedFrameId = data?.equippedFrameGiftId ?? null;
 
   const visibleGifts = gifts.filter((g) => matchesTab(g.type, tab));
-  const ownedCosmetics = gifts.filter((g) => isCosmetic(g.type) && ownedIds.has(g.id));
 
   function isEquipped(gift: Gift) {
     return gift.id === equippedBadgeId || gift.id === equippedFrameId;
@@ -199,27 +199,6 @@ export default function RewardsPage() {
         toast({ title: 'Không thể đổi quà', description: message, variant: 'error' });
       },
     });
-  }
-
-  function toggleEquip(gift: Gift) {
-    const slot = gift.type === 'BADGE' ? 'badge' : 'frame';
-    const equipped = isEquipped(gift);
-    equipMutation.mutate(
-      { giftId: equipped ? null : gift.id, slot },
-      {
-        onSuccess: async () => {
-          toast({
-            title: equipped ? 'Đã bỏ trang bị' : 'Đã trang bị',
-            description: gift.name,
-            variant: 'success',
-          });
-          await refreshUser();
-        },
-        onError: () => {
-          toast({ title: 'Không thể cập nhật trang bị', variant: 'error' });
-        },
-      },
-    );
   }
 
   return (
@@ -296,7 +275,9 @@ export default function RewardsPage() {
 
             {user && (
               <div className="mx-auto w-full max-w-sm lg:mx-0">
-                <RewardLadder balance={balance ?? user.contributionPoints ?? 0} />
+                <RewardLadder
+                  achievedPoints={user.achievedPoints ?? user.contributionPoints ?? 0}
+                />
               </div>
             )}
           </div>
@@ -304,43 +285,6 @@ export default function RewardsPage() {
       </section>
 
       <div className="container space-y-10 py-10">
-        {/* Bộ sưu tập của tôi */}
-        {user && ownedCosmetics.length > 0 && (
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight">Bộ sưu tập của tôi</h2>
-              <p className="text-sm text-muted-foreground">
-                Bật/tắt huy hiệu và khung avatar đã sở hữu — thay đổi hiển thị ngay trên Header.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {ownedCosmetics.map((gift) => {
-                const equipped = isEquipped(gift);
-                return (
-                  <Card key={gift.id} className="flex items-center gap-3 p-3">
-                    <div className="h-20 w-24 shrink-0 overflow-hidden rounded-lg">
-                      <CosmeticPreview gift={gift} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{gift.name}</p>
-                      <p className="text-xs text-muted-foreground">{TYPE_LABEL[gift.type]}</p>
-                      <Button
-                        size="sm"
-                        variant={equipped ? 'secondary' : 'outline'}
-                        className="mt-2"
-                        disabled={equipMutation.isPending}
-                        onClick={() => toggleEquip(gift)}
-                      >
-                        {equipped ? 'Bỏ trang bị' : 'Trang bị'}
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
         {/* Catalog */}
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -380,6 +324,7 @@ export default function RewardsPage() {
                   equipped={isEquipped(gift)}
                   isAuthed={!!user}
                   onRedeem={setConfirmGift}
+                  onNotEnough={setNotEnoughGift}
                 />
               ))}
             </div>
@@ -436,6 +381,35 @@ export default function RewardsPage() {
             </Button>
             <Button onClick={confirmRedeem} disabled={redeemMutation.isPending}>
               {redeemMutation.isPending ? 'Đang xử lý...' : 'Xác nhận đổi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal không đủ điểm */}
+      <Dialog open={!!notEnoughGift} onOpenChange={(open) => !open && setNotEnoughGift(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Không đủ điểm</DialogTitle>
+            <DialogDescription>
+              {notEnoughGift && (
+                <>
+                  Bạn cần{' '}
+                  <span className="font-semibold text-hust">
+                    {notEnoughGift.pointsCost - (balance ?? 0)}
+                  </span>{' '}
+                  điểm nữa để đổi “{notEnoughGift.name}”. Hãy tiếp tục đóng góp tài liệu để nhận
+                  thêm điểm nhé!
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNotEnoughGift(null)}>
+              Đóng
+            </Button>
+            <Button asChild>
+              <Link to="/upload">Đăng tài liệu</Link>
             </Button>
           </DialogFooter>
         </DialogContent>

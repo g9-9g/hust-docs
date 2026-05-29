@@ -41,7 +41,6 @@ const uploaderSelect = {
   username: true,
   fullName: true,
   avatarUrl: true,
-  isVerified: true,
 } satisfies Prisma.UserSelect;
 
 const subjectSelect = { id: true, name: true, code: true } satisfies Prisma.SubjectSelect;

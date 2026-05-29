@@ -21,6 +21,7 @@ import SubjectsPage from '@/pages/SubjectsPage';
 import SubjectDetailPage from '@/pages/SubjectDetailPage';
 import PointsPage from '@/pages/PointsPage';
 import RewardsPage from '@/pages/RewardsPage';
+import MePage from '@/pages/MePage';
 
 function RootPage() {
   const user = useAuth((s) => s.user);
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="register" element={<Navigate to="/login" replace />} />
           <Route element={<ProtectedRoute />}>
             <Route path="upload" element={<UploadPage />} />
+            <Route path="me" element={<MePage />} />
             <Route path="me/points" element={<PointsPage />} />
           </Route>
         </Route>

@@ -7,6 +7,7 @@ import {
   type ListDocumentsParams,
 } from '@/api/documents';
 import { getMyPoints, type MyPointsParams } from '@/api/points';
+import { getMyProfile, listMyDocuments, type MyDocumentsParams } from '@/api/users';
 import {
   createComment,
   deleteComment,
@@ -18,6 +19,7 @@ import {
   equipCosmetic,
   getGifts,
   getMyRedemptions,
+  markRedemptionUsed,
   redeemGift,
   type MyRedemptionsParams,
 } from '@/api/gifts';
@@ -26,6 +28,7 @@ import type {
   GiftCatalog,
   ListResponse,
   Major,
+  MyProfile,
   PointsSummary,
   RedemptionsSummary,
   SubjectListItem,
@@ -163,10 +166,35 @@ export function useEquipMutation() {
   });
 }
 
+export function useMyProfileQuery() {
+  return useQuery<MyProfile>({
+    queryKey: ['my-profile'],
+    queryFn: getMyProfile,
+  });
+}
+
+export function useMyDocumentsQuery(params: MyDocumentsParams) {
+  return useQuery<ListResponse<DocumentItem>>({
+    queryKey: ['my-documents', params],
+    queryFn: () => listMyDocuments(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useMyRedemptionsQuery(params: MyRedemptionsParams) {
   return useQuery<RedemptionsSummary>({
     queryKey: ['my-redemptions', params],
     queryFn: () => getMyRedemptions(params),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useUseRedemptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => markRedemptionUsed(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-redemptions'] });
+    },
   });
 }

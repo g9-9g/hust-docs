@@ -13,7 +13,6 @@ const userSelect = {
   username: true,
   fullName: true,
   avatarUrl: true,
-  isVerified: true,
 } satisfies Prisma.UserSelect;
 
 const listQuerySchema = z.object({

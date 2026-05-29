@@ -32,12 +32,18 @@ async function serializeUser(u: User) {
   const giftIds = [u.equippedBadgeGiftId, u.equippedFrameGiftId].filter(
     (id): id is string => !!id,
   );
-  const gifts = giftIds.length
-    ? await prisma.gift.findMany({
-        where: { id: { in: giftIds } },
-        select: { id: true, name: true, icon: true, accentColor: true, frameGradient: true },
-      })
-    : [];
+  const [gifts, earned] = await Promise.all([
+    giftIds.length
+      ? prisma.gift.findMany({
+          where: { id: { in: giftIds } },
+          select: { id: true, name: true, icon: true, accentColor: true, frameGradient: true },
+        })
+      : Promise.resolve([] as { id: string; name: string; icon: string | null; accentColor: string | null; frameGradient: string | null }[]),
+    prisma.pointsTransaction.aggregate({
+      _sum: { amount: true },
+      where: { userId: u.id, amount: { gt: 0 } },
+    }),
+  ]);
   const giftById = new Map(gifts.map((g) => [g.id, g]));
   const badge = u.equippedBadgeGiftId ? giftById.get(u.equippedBadgeGiftId) : undefined;
   const frame = u.equippedFrameGiftId ? giftById.get(u.equippedFrameGiftId) : undefined;
@@ -51,7 +57,7 @@ async function serializeUser(u: User) {
     role: u.role,
     avatarUrl: u.avatarUrl,
     contributionPoints: u.contributionPoints,
-    isVerified: u.isVerified,
+    achievedPoints: earned._sum.amount ?? 0,
     equippedBadge: badge
       ? { id: badge.id, name: badge.name, icon: badge.icon, accentColor: badge.accentColor }
       : null,
@@ -102,7 +108,6 @@ router.post('/microsoft', async (req, res, next) => {
       const patch: Record<string, unknown> = {};
       if (!user.microsoftId) {
         patch.microsoftId = claims.oid;
-        patch.isVerified = true;
       }
       // Nếu DB đang lưu fullName có đuôi MSSV (chưa parse), cập nhật về dạng đã làm sạch.
       if (parsed.studentId && (user.fullName !== parsed.fullName || !user.studentId)) {
@@ -121,7 +126,6 @@ router.post('/microsoft', async (req, res, next) => {
           username,
           email: claims.email,
           microsoftId: claims.oid,
-          isVerified: true,
         },
       });
     }

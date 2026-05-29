@@ -29,7 +29,7 @@ const SCALE_STEP = 0.15;
 export function PdfViewer({ url }: Props) {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1.1);
+  const [scale, setScale] = useState(0.95);
   const [mode, setMode] = useState<Mode>('paged');
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

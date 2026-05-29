@@ -1,22 +1,37 @@
-import { Award, Check, Gem, Lock, Medal, Sparkles, Sprout, Trophy } from 'lucide-react';
+import { Award, Check, Gem, Lock, Medal, Sparkles, Sprout, Trophy, type LucideIcon } from 'lucide-react';
 
-const REWARD_TIERS = [
-  { name: 'Kim cương', threshold: 5000, icon: Gem, gradient: 'from-cyan-200 to-sky-500' },
-  { name: 'Vàng', threshold: 1500, icon: Trophy, gradient: 'from-amber-200 to-yellow-500' },
-  { name: 'Bạc', threshold: 500, icon: Award, gradient: 'from-slate-100 to-slate-400' },
-  { name: 'Đồng', threshold: 100, icon: Medal, gradient: 'from-orange-300 to-amber-700' },
-  { name: 'Tân binh', threshold: 0, icon: Sprout, gradient: 'from-emerald-300 to-emerald-600' },
+export interface RewardTier {
+  name: string;
+  threshold: number;
+  icon: LucideIcon;
+  gradient: string;
+  /** Màu chủ đạo dùng cho BadgeChip (matching icon/gradient). */
+  accentColor: string;
+}
+
+export const REWARD_TIERS: readonly RewardTier[] = [
+  { name: 'Kim cương', threshold: 5000, icon: Gem, gradient: 'from-cyan-200 to-sky-500', accentColor: '#0284c7' },
+  { name: 'Vàng', threshold: 1500, icon: Trophy, gradient: 'from-amber-200 to-yellow-500', accentColor: '#ca8a04' },
+  { name: 'Bạc', threshold: 500, icon: Award, gradient: 'from-slate-100 to-slate-400', accentColor: '#64748b' },
+  { name: 'Đồng', threshold: 100, icon: Medal, gradient: 'from-orange-300 to-amber-700', accentColor: '#b45309' },
+  { name: 'Tân binh', threshold: 0, icon: Sprout, gradient: 'from-emerald-300 to-emerald-600', accentColor: '#059669' },
 ] as const;
 
+export function getTier(achievedPoints: number): RewardTier | null {
+  const t = REWARD_TIERS.find((t) => achievedPoints >= t.threshold);
+  return t ?? null;
+}
+
 interface RewardLadderProps {
-  balance: number;
+  /** Tổng điểm đã đạt được (cộng dồn, không trừ khi đổi quà). */
+  achievedPoints: number;
 }
 
 /** Vertical stacked levels — thang/bậc tiến độ tới mốc đổi quà tiếp theo. */
-export function RewardLadder({ balance }: RewardLadderProps) {
-  const currentIdx = REWARD_TIERS.findIndex((t) => balance >= t.threshold);
+export function RewardLadder({ achievedPoints }: RewardLadderProps) {
+  const currentIdx = REWARD_TIERS.findIndex((t) => achievedPoints >= t.threshold);
   const nextTier = currentIdx > 0 ? REWARD_TIERS[currentIdx - 1] : null;
-  const pointsToNext = nextTier ? nextTier.threshold - balance : 0;
+  const pointsToNext = nextTier ? nextTier.threshold - achievedPoints : 0;
 
   return (
     <div className="relative">
@@ -26,7 +41,7 @@ export function RewardLadder({ balance }: RewardLadderProps) {
           className="pointer-events-none absolute left-[27px] top-5 bottom-5 w-px bg-gradient-to-b from-white/10 via-white/30 to-white/10"
         />
         {REWARD_TIERS.map((tier, i) => {
-          const reached = balance >= tier.threshold;
+          const reached = achievedPoints >= tier.threshold;
           const isCurrent = i === currentIdx;
           const distanceAbove = currentIdx >= 0 ? currentIdx - i : 0;
           const opacity = reached ? 1 : Math.max(0.4, 1 - distanceAbove * 0.22);

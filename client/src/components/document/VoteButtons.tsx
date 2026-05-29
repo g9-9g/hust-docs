@@ -1,4 +1,4 @@
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowBigUp, ArrowBigDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ export function VoteButtons({
           onClick={() => handleVote('UP')}
           disabled={vote.isPending || isOwner}
         >
-          <ThumbsUp className={cn('h-4 w-4', myVote === 'UP' && 'fill-current')} />
+          <ArrowBigUp className={cn('h-4 w-4', myVote === 'UP' && 'fill-current')} />
           {upvoteCount}
         </Button>
         <Button
@@ -74,7 +74,7 @@ export function VoteButtons({
           onClick={() => handleVote('DOWN')}
           disabled={vote.isPending || isOwner}
         >
-          <ThumbsDown className={cn('h-4 w-4', myVote === 'DOWN' && 'fill-current')} />
+          <ArrowBigDown className={cn('h-4 w-4', myVote === 'DOWN' && 'fill-current')} />
           {downvoteCount}
         </Button>
       </div>

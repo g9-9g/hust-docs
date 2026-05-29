@@ -192,7 +192,11 @@ function RedemptionHistory() {
                   <span className="text-base font-semibold text-destructive">
                     -{r.pointsSpent}
                   </span>
-                  <Badge variant={status.variant}>{status.label}</Badge>
+                  {r.usedAt ? (
+                    <Badge variant="outline">Đã sử dụng</Badge>
+                  ) : (
+                    <Badge variant={status.variant}>{status.label}</Badge>
+                  )}
                 </div>
               </CardContent>
             </Card>

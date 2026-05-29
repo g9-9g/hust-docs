@@ -20,7 +20,7 @@ export interface User {
   role: 'user' | 'admin';
   avatarUrl: string | null;
   contributionPoints: number;
-  isVerified: boolean;
+  achievedPoints?: number;
   equippedBadge?: EquippedBadge | null;
   equippedAvatarFrame?: EquippedAvatarFrame | null;
 }
@@ -69,7 +69,6 @@ export interface DocumentUploader {
   username: string;
   fullName: string;
   avatarUrl: string | null;
-  isVerified: boolean;
 }
 
 export interface DocumentSubjectRef {
@@ -179,6 +178,7 @@ export interface GiftRedemption {
   giftType: GiftType;
   pointsSpent: number;
   status: RedemptionStatus;
+  usedAt: string | null;
   createdAt: string;
 }
 
@@ -197,6 +197,20 @@ export interface PointsSummary {
   limit: number;
   total: number;
   hasMore: boolean;
+}
+
+export interface MyProfileStats {
+  totalDocuments: number;
+  publicDocuments: number;
+  totalDownloads: number;
+  totalUpvotes: number;
+  totalDownvotes: number;
+  totalViews: number;
+}
+
+export interface MyProfile {
+  user: User & { createdAt: string };
+  stats: MyProfileStats;
 }
 
 export interface ListResponse<T> {

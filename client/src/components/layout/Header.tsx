@@ -450,8 +450,10 @@ export function Header() {
                       <span>Quà của tôi</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2" disabled>
-                    <UserIcon className="h-4 w-4" /> Trang cá nhân
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                    <Link to="/me">
+                      <UserIcon className="h-4 w-4" /> Trang cá nhân
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="gap-2 text-destructive" onSelect={logout}>

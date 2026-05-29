@@ -249,9 +249,12 @@ export default function HomePage() {
 
       {showGrid ? (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold">
-            {heading}
-            <span className="ml-2 text-sm font-normal text-muted-foreground">{total} kết quả</span>
+          <h2 className="flex items-center gap-3">
+            <span className="h-7 w-1.5 rounded-full bg-gradient-to-b from-hust to-hust-700" />
+            <span className="text-xl font-bold tracking-tight md:text-2xl">{heading}</span>
+            <span className="rounded-full bg-hust/10 px-2.5 py-0.5 text-xs font-medium text-hust">
+              {total} kết quả
+            </span>
           </h2>
           {gridQuery.isLoading ? (
             <DocumentGridSkeleton />

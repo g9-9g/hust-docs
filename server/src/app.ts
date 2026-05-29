@@ -8,6 +8,7 @@ import subjectRoutes from './modules/subjects/subject.routes.js';
 import pointsRoutes from './modules/points/points.routes.js';
 import giftRoutes from './modules/gifts/gift.routes.js';
 import redemptionRoutes from './modules/gifts/redemption.routes.js';
+import userRoutes from './modules/users/user.routes.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 
 export function createApp() {
@@ -16,6 +17,7 @@ export function createApp() {
   app.set('trust proxy', 1);
   const allowedOrigins = env.clientOrigin;
   const vercelPreview = /^https:\/\/hust-docs-[a-z0-9-]+\.vercel\.app$/i;
+  const lanOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/i;
   app.use(
     cors({
       origin(origin, callback) {
@@ -24,6 +26,7 @@ export function createApp() {
           return callback(null, true);
         }
         if (vercelPreview.test(origin)) return callback(null, true);
+        if (lanOrigin.test(origin)) return callback(null, true);
         return callback(new Error(`CORS: origin ${origin} not allowed`));
       },
       credentials: true,
@@ -40,6 +43,7 @@ export function createApp() {
   app.use('/api/points', pointsRoutes);
   app.use('/api/gifts', giftRoutes);
   app.use('/api/redemptions', redemptionRoutes);
+  app.use('/api/users', userRoutes);
   app.use('/api', subjectRoutes);
 
   app.use(notFoundHandler);

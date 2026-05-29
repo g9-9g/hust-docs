@@ -81,7 +81,6 @@ model User {
   role                Role       @default(user)
   avatarUrl           String?
   contributionPoints  Int        @default(0)
-  isVerified          Boolean    @default(false)
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 
@@ -236,6 +235,7 @@ model GiftRedemption {
   giftType    GiftType
   pointsSpent Int
   status      RedemptionStatus
+  usedAt      DateTime?
   createdAt   DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id])
