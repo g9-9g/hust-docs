@@ -1,4 +1,5 @@
-import { api, API_BASE_URL } from './client';
+import { api } from './client';
+import { getApiBaseUrl } from '@/config/api';
 import type { DocumentItem, ListResponse } from '@/types';
 
 export interface ListDocumentsParams {
@@ -42,15 +43,15 @@ export async function voteDocument(id: string, type: 'UP' | 'DOWN'): Promise<Vot
 }
 
 export function downloadUrl(id: string) {
-  return `${API_BASE_URL}/documents/${id}/download`;
+  return `${getApiBaseUrl()}/documents/${id}/download`;
 }
 
 export function previewUrl(id: string) {
-  return `${API_BASE_URL}/documents/${id}/preview`;
+  return `${getApiBaseUrl()}/documents/${id}/preview`;
 }
 
 export function previewUrlByIndex(id: string, index: number) {
-  return `${API_BASE_URL}/documents/${id}/preview/${index}`;
+  return `${getApiBaseUrl()}/documents/${id}/preview/${index}`;
 }
 
 export function publicPreviewUrl(id: string): string | null {

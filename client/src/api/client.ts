@@ -1,15 +1,16 @@
 import axios from 'axios';
-
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import { getApiBaseUrl } from '@/config/api';
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
   headers: {
     'ngrok-skip-browser-warning': 'true',
   },
 });
 
 api.interceptors.request.use((config) => {
+  // Đọc base URL động (localStorage có thể override env) trên từng request.
+  config.baseURL = getApiBaseUrl();
+
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
